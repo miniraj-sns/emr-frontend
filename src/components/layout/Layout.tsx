@@ -13,10 +13,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar - Full height */}
       <Sidebar isOpen={sidebar.isOpen} />
       
       {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col min-h-screen">
         <Header />
         
         {/* Page content */}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
+import { toggleSidebar } from '../../features/ui/uiSlice'
 import { 
   LayoutDashboard,
   Users,
@@ -31,6 +32,7 @@ interface MenuItem {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+  const dispatch = useDispatch()
   const location = useLocation()
   const { user } = useSelector((state: RootState) => state.auth)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
@@ -41,6 +43,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         ? prev.filter(name => name !== menuName)
         : [...prev, menuName]
     )
+  }
+
+  const handleMobileClose = () => {
+    dispatch(toggleSidebar())
   }
 
   const isActive = (href: string) => location.pathname === href
@@ -161,6 +167,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                 ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
+            onClick={() => {
+              // Close sidebar on mobile when clicking a link
+              if (window.innerWidth < 1024) {
+                dispatch(toggleSidebar())
+              }
+            }}
           >
             <item.icon className="mr-3 h-5 w-5" />
             <span>{item.name}</span>
@@ -179,13 +191,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden" />
+        <div 
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          onClick={handleMobileClose}
+        />
       )}
       
-      {/* Sidebar */}
+      {/* Sidebar - Full height */}
       <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
+      } lg:translate-x-0 lg:static lg:inset-0 lg:h-full`}>
         
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
@@ -200,7 +215,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </div>
           
           {/* Mobile close button */}
-          <button className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+          <button 
+            onClick={handleMobileClose}
+            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+          >
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -224,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Scrollable */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {menuItems.map(item => renderMenuItem(item))}
         </nav>

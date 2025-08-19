@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
 import { toggleSidebar } from '../../features/ui/uiSlice'
@@ -21,6 +21,26 @@ const Header: React.FC = () => {
   const { logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const notificationsRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -42,6 +62,7 @@ const Header: React.FC = () => {
             <button
               onClick={() => dispatch(toggleSidebar())}
               className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              aria-label="Toggle sidebar"
             >
               <MenuIcon className="h-6 w-6" />
             </button>
@@ -64,10 +85,11 @@ const Header: React.FC = () => {
           {/* Right side - Notifications and user menu */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
                 onClick={toggleNotifications}
                 className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                aria-label="Notifications"
               >
                 <Bell className="h-6 w-6" />
                 <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-400"></span>
@@ -89,10 +111,11 @@ const Header: React.FC = () => {
             </div>
 
             {/* User menu */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={toggleUserMenu}
                 className="flex items-center space-x-3 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                aria-label="User menu"
               >
                 <div className="flex items-center space-x-3">
                   <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center">
