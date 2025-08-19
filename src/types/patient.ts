@@ -23,6 +23,8 @@ export interface Patient {
   deleted_at?: string
   referring_provider?: User
   assigned_coach?: User
+  vital_signs?: PatientVitalSigns[]
+  medications?: PatientMedication[]
 }
 
 export interface User {
@@ -31,6 +33,46 @@ export interface User {
   last_name: string
   email: string
   roles?: string[]
+}
+
+export interface PatientVitalSigns {
+  id: number
+  patient_id: number
+  recorded_by: number
+  height?: string
+  weight?: string
+  blood_pressure_systolic?: number
+  blood_pressure_diastolic?: number
+  temperature?: number
+  heart_rate?: number
+  oxygen_saturation?: number
+  respiratory_rate?: number
+  recorded_at: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  recorded_by_user?: User
+}
+
+export interface PatientMedication {
+  id: number
+  patient_id: number
+  prescribed_by_user_id: number
+  medication_name: string
+  dosage: string
+  frequency: string
+  route?: string
+  start_date?: string
+  end_date?: string
+  status: 'active' | 'discontinued' | 'completed'
+  prescribed_by?: string
+  pharmacy?: string
+  refill_date?: string
+  side_effects?: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  prescribed_by_user?: User
 }
 
 export interface PatientListResponse {

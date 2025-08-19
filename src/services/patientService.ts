@@ -8,7 +8,9 @@ import {
   UpdatePatientRequest,
   PatientNote,
   PatientFile,
-  PatientReport
+  PatientReport,
+  PatientVitalSigns,
+  PatientMedication
 } from '../types/patient'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
@@ -23,7 +25,7 @@ const apiClient = axios.create({
 
 // Add auth token to requests
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('user_token')
+  const token = localStorage.getItem('user_token') // Changed from 'access_token'
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -154,6 +156,100 @@ export const patientService = {
 
   async publishPatientReport(patientId: number, reportId: number): Promise<PatientReport> {
     const response = await apiClient.post(`/patients/${patientId}/reports/${reportId}/publish`)
+    return response.data
+  },
+
+  // Patient Vital Signs
+  async getPatientVitalSigns(patientId: number): Promise<{ vital_signs: PatientVitalSigns[]; latest: PatientVitalSigns | null }> {
+    const response = await apiClient.get(`/patients/${patientId}/vital-signs`)
+    return response.data
+  },
+
+  async createPatientVitalSigns(patientId: number, vitalSignsData: {
+    height?: string
+    weight?: string
+    blood_pressure_systolic?: number
+    blood_pressure_diastolic?: number
+    temperature?: number
+    heart_rate?: number
+    oxygen_saturation?: number
+    respiratory_rate?: number
+    recorded_at: string
+    notes?: string
+  }): Promise<PatientVitalSigns> {
+    const response = await apiClient.post(`/patients/${patientId}/vital-signs`, vitalSignsData)
+    return response.data
+  },
+
+  async updatePatientVitalSigns(patientId: number, vitalSignsId: number, vitalSignsData: {
+    height?: string
+    weight?: string
+    blood_pressure_systolic?: number
+    blood_pressure_diastolic?: number
+    temperature?: number
+    heart_rate?: number
+    oxygen_saturation?: number
+    respiratory_rate?: number
+    recorded_at?: string
+    notes?: string
+  }): Promise<PatientVitalSigns> {
+    const response = await apiClient.put(`/patients/${patientId}/vital-signs/${vitalSignsId}`, vitalSignsData)
+    return response.data
+  },
+
+  async deletePatientVitalSigns(patientId: number, vitalSignsId: number): Promise<{ message: string }> {
+    const response = await apiClient.delete(`/patients/${patientId}/vital-signs/${vitalSignsId}`)
+    return response.data
+  },
+
+  // Patient Medications
+  async getPatientMedications(patientId: number): Promise<{
+    medications: PatientMedication[]
+    active_medications: PatientMedication[]
+    discontinued_medications: PatientMedication[]
+  }> {
+    const response = await apiClient.get(`/patients/${patientId}/medications`)
+    return response.data
+  },
+
+  async createPatientMedication(patientId: number, medicationData: {
+    medication_name: string
+    dosage: string
+    frequency: string
+    route?: string
+    start_date?: string
+    end_date?: string
+    status?: 'active' | 'discontinued' | 'completed'
+    prescribed_by?: string
+    pharmacy?: string
+    refill_date?: string
+    side_effects?: string
+    notes?: string
+  }): Promise<PatientMedication> {
+    const response = await apiClient.post(`/patients/${patientId}/medications`, medicationData)
+    return response.data
+  },
+
+  async updatePatientMedication(patientId: number, medicationId: number, medicationData: {
+    medication_name?: string
+    dosage?: string
+    frequency?: string
+    route?: string
+    start_date?: string
+    end_date?: string
+    status?: 'active' | 'discontinued' | 'completed'
+    prescribed_by?: string
+    pharmacy?: string
+    refill_date?: string
+    side_effects?: string
+    notes?: string
+  }): Promise<PatientMedication> {
+    const response = await apiClient.put(`/patients/${patientId}/medications/${medicationId}`, medicationData)
+    return response.data
+  },
+
+  async deletePatientMedication(patientId: number, medicationId: number): Promise<{ message: string }> {
+    const response = await apiClient.delete(`/patients/${patientId}/medications/${medicationId}`)
     return response.data
   },
 }

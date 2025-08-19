@@ -98,19 +98,6 @@ const PatientDetailPage: React.FC = () => {
 
   // Mock data for demonstration - in real app this would come from API
   const mockData = {
-    vitals: {
-      height: '5\'8"',
-      weight: '165 lbs',
-      bloodPressure: '120/80',
-      temperature: '98.6°F',
-      heartRate: '72 bpm',
-      lastUpdated: '2025-01-15'
-    },
-    medications: [
-      { name: 'Lisinopril', dosage: '10mg', frequency: 'Daily', status: 'active' },
-      { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', status: 'active' },
-      { name: 'Ibuprofen', dosage: '400mg', frequency: 'As needed', status: 'discontinued' }
-    ],
     allergies: [
       { allergen: 'Penicillin', severity: 'Severe', reaction: 'Anaphylaxis' },
       { allergen: 'Latex', severity: 'Moderate', reaction: 'Skin rash' }
@@ -119,11 +106,6 @@ const PatientDetailPage: React.FC = () => {
       primary: { provider: 'Blue Cross Blue Shield', policyNumber: 'BCBS123456', groupNumber: 'GRP789' },
       secondary: { provider: 'Medicare', policyNumber: 'MED456789', groupNumber: 'GRP123' }
     },
-    appointments: [
-      { date: '2025-01-20', time: '10:00 AM', type: 'Follow-up', provider: 'Dr. Smith', status: 'scheduled' },
-      { date: '2025-01-15', time: '2:30 PM', type: 'Consultation', provider: 'Dr. Johnson', status: 'completed' },
-      { date: '2025-01-10', time: '9:00 AM', type: 'Physical', provider: 'Dr. Williams', status: 'completed' }
-    ],
     medicalHistory: [
       { condition: 'Hypertension', diagnosed: '2020-03-15', status: 'Active', notes: 'Well controlled with medication' },
       { condition: 'Type 2 Diabetes', diagnosed: '2019-08-22', status: 'Active', notes: 'Diet and exercise management' },
@@ -140,6 +122,13 @@ const PatientDetailPage: React.FC = () => {
       { name: 'Lab Results', type: 'Medical', date: '2025-01-10', size: '856 KB' }
     ]
   }
+
+  // Get latest vital signs
+  const latestVitals = currentPatient?.vital_signs?.[0]
+  
+  // Get active and discontinued medications
+  const activeMedications = currentPatient?.medications?.filter(med => med.status === 'active') || []
+  const discontinuedMedications = currentPatient?.medications?.filter(med => med.status === 'discontinued') || []
 
   if (loading.detail) {
     return (
@@ -309,40 +298,40 @@ const PatientDetailPage: React.FC = () => {
                     <div className="flex items-center justify-center mb-2">
                       <Ruler className="h-5 w-5 text-blue-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{mockData.vitals.height}</p>
+                    <p className="text-sm font-medium text-gray-900">{latestVitals?.height}</p>
                     <p className="text-xs text-gray-500">Height</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <Weight className="h-5 w-5 text-green-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{mockData.vitals.weight}</p>
+                    <p className="text-sm font-medium text-gray-900">{latestVitals?.weight}</p>
                     <p className="text-xs text-gray-500">Weight</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <Activity className="h-5 w-5 text-red-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{mockData.vitals.bloodPressure}</p>
+                    <p className="text-sm font-medium text-gray-900">{latestVitals?.blood_pressure}</p>
                     <p className="text-xs text-gray-500">BP</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <Thermometer className="h-5 w-5 text-orange-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{mockData.vitals.temperature}</p>
+                    <p className="text-sm font-medium text-gray-900">{latestVitals?.temperature}</p>
                     <p className="text-xs text-gray-500">Temp</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <Heart className="h-5 w-5 text-pink-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{mockData.vitals.heartRate}</p>
+                    <p className="text-sm font-medium text-gray-900">{latestVitals?.heart_rate}</p>
                     <p className="text-xs text-gray-500">HR</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-gray-500">Last Updated</p>
-                    <p className="text-sm font-medium text-gray-900">{new Date(mockData.vitals.lastUpdated).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-gray-900">{new Date(latestVitals?.updated_at || currentPatient.updated_at).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
@@ -401,19 +390,19 @@ const PatientDetailPage: React.FC = () => {
                     Current Medications
                   </h3>
                   <div className="space-y-2">
-                    {mockData.medications.filter(med => med.status === 'active').slice(0, 3).map((medication, index) => (
+                    {activeMedications.slice(0, 3).map((medication, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <div>
                           <p className="text-sm font-medium text-gray-900">{medication.name}</p>
-                          <p className="text-xs text-gray-600">{medication.dosage}</p>
+                          <p className="text-xs text-gray-600">{medication.dosage} • {medication.frequency}</p>
                         </div>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
                       </div>
                     ))}
-                    {mockData.medications.filter(med => med.status === 'active').length > 3 && (
-                      <p className="text-xs text-gray-500 text-center">+{mockData.medications.filter(med => med.status === 'active').length - 3} more</p>
+                    {activeMedications.length > 3 && (
+                      <p className="text-xs text-gray-500 text-center">+{activeMedications.length - 3} more</p>
                     )}
                   </div>
                 </div>
@@ -425,7 +414,7 @@ const PatientDetailPage: React.FC = () => {
                     Allergies
                   </h3>
                   <div className="space-y-2">
-                    {mockData.allergies.map((allergy, index) => (
+                    {currentPatient.allergies?.map((allergy, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
                         <div>
                           <p className="text-sm font-medium text-gray-900">{allergy.allergen}</p>
@@ -448,14 +437,14 @@ const PatientDetailPage: React.FC = () => {
                     Upcoming Appointments
                   </h3>
                   <div className="space-y-2">
-                    {mockData.appointments.filter(apt => apt.status === 'scheduled').slice(0, 2).map((appointment, index) => (
+                    {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').slice(0, 2).map((appointment, index) => (
                       <div key={index} className="p-2 bg-blue-50 rounded border border-blue-200">
                         <p className="text-sm font-medium text-gray-900">{appointment.type}</p>
                         <p className="text-xs text-gray-600">{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</p>
                         <p className="text-xs text-gray-500">with {appointment.provider}</p>
                       </div>
                     ))}
-                    {mockData.appointments.filter(apt => apt.status === 'scheduled').length === 0 && (
+                    {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').length === 0 && (
                       <p className="text-xs text-gray-500 text-center">No upcoming appointments</p>
                     )}
                   </div>
@@ -532,7 +521,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.medications.filter(med => med.status === 'active').map((medication, index) => (
+                  {activeMedications.map((medication, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">{medication.name}</p>
@@ -543,7 +532,7 @@ const PatientDetailPage: React.FC = () => {
                       </span>
                     </div>
                   ))}
-                  {mockData.medications.filter(med => med.status === 'active').length === 0 && (
+                  {activeMedications.length === 0 && (
                     <div className="text-center py-8">
                       <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No active medications</p>
@@ -565,7 +554,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.allergies.map((allergy, index) => (
+                  {currentPatient.allergies?.map((allergy, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-red-200 rounded-lg bg-red-50">
                       <div>
                         <p className="font-medium text-gray-900">{allergy.allergen}</p>
@@ -578,7 +567,7 @@ const PatientDetailPage: React.FC = () => {
                       </span>
                     </div>
                   ))}
-                  {mockData.allergies.length === 0 && (
+                  {currentPatient.allergies?.length === 0 && (
                     <div className="text-center py-8">
                       <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No allergies recorded</p>
@@ -600,7 +589,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.medicalHistory.map((condition, index) => (
+                  {currentPatient.medical_history?.map((condition, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium text-gray-900">{condition.condition}</h3>
@@ -614,7 +603,7 @@ const PatientDetailPage: React.FC = () => {
                       <p className="text-sm text-gray-700">{condition.notes}</p>
                     </div>
                   ))}
-                  {mockData.medicalHistory.length === 0 && (
+                  {currentPatient.medical_history?.length === 0 && (
                     <div className="text-center py-8">
                       <Stethoscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No medical conditions recorded</p>
@@ -636,7 +625,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.labResults.map((lab, index) => (
+                  {currentPatient.lab_results?.map((lab, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">{lab.test}</p>
@@ -650,7 +639,7 @@ const PatientDetailPage: React.FC = () => {
                       </span>
                     </div>
                   ))}
-                  {mockData.labResults.length === 0 && (
+                  {currentPatient.lab_results?.length === 0 && (
                     <div className="text-center py-8">
                       <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No lab results available</p>
@@ -676,7 +665,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.appointments.filter(apt => apt.status === 'scheduled').map((appointment, index) => (
+                  {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').map((appointment, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border border-blue-200 rounded-lg bg-blue-50">
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
@@ -700,7 +689,7 @@ const PatientDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {mockData.appointments.filter(apt => apt.status === 'scheduled').length === 0 && (
+                  {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').length === 0 && (
                     <div className="text-center py-8">
                       <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No upcoming appointments</p>
@@ -716,7 +705,7 @@ const PatientDetailPage: React.FC = () => {
                   Recent Appointments
                 </h2>
                 <div className="space-y-3">
-                  {mockData.appointments.filter(apt => apt.status === 'completed').map((appointment, index) => (
+                  {currentPatient.appointments?.filter(apt => apt.status === 'completed').map((appointment, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
@@ -739,7 +728,7 @@ const PatientDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {mockData.appointments.filter(apt => apt.status === 'completed').length === 0 && (
+                  {currentPatient.appointments?.filter(apt => apt.status === 'completed').length === 0 && (
                     <div className="text-center py-8">
                       <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No recent appointments</p>
@@ -762,15 +751,15 @@ const PatientDetailPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Provider</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.primary.provider}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.primary?.provider}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Policy Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.primary.policyNumber}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.primary?.policy_number}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Group Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.primary.groupNumber}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.primary?.group_number}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Status</label>
@@ -792,15 +781,15 @@ const PatientDetailPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Provider</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.secondary.provider}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.secondary?.provider}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Policy Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.secondary.policyNumber}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.secondary?.policy_number}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Group Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{mockData.insurance.secondary.groupNumber}</p>
+                      <p className="mt-1 text-sm text-gray-900">{currentPatient.insurance?.secondary?.group_number}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500">Status</label>
@@ -821,15 +810,15 @@ const PatientDetailPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center p-4 border border-gray-200 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">$0</p>
+                      <p className="text-2xl font-bold text-blue-600">${currentPatient.current_balance?.toFixed(2) || '0'}</p>
                       <p className="text-sm text-gray-600">Current Balance</p>
                     </div>
                     <div className="text-center p-4 border border-gray-200 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">$1,250</p>
+                      <p className="text-2xl font-bold text-green-600">${currentPatient.insurance_paid?.toFixed(2) || '0'}</p>
                       <p className="text-sm text-gray-600">Insurance Paid</p>
                     </div>
                     <div className="text-center p-4 border border-gray-200 rounded-lg">
-                      <p className="text-2xl font-bold text-orange-600">$150</p>
+                      <p className="text-2xl font-bold text-orange-600">${currentPatient.patient_paid?.toFixed(2) || '0'}</p>
                       <p className="text-sm text-gray-600">Patient Paid</p>
                     </div>
                   </div>
@@ -853,7 +842,7 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {mockData.documents.map((document, index) => (
+                  {currentPatient.documents?.map((document, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-gray-100 rounded">
@@ -876,7 +865,7 @@ const PatientDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {mockData.documents.length === 0 && (
+                  {currentPatient.documents?.length === 0 && (
                     <div className="text-center py-8">
                       <FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No documents uploaded</p>
@@ -895,7 +884,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Medical Records</h3>
                     </div>
                     <p className="text-sm text-gray-600">Lab results, test reports, medical notes</p>
-                    <p className="text-xs text-gray-500 mt-2">2 documents</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.lab_results?.length || 0} documents</p>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center mb-2">
@@ -903,7 +892,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Insurance</h3>
                     </div>
                     <p className="text-sm text-gray-600">Insurance cards, policy documents</p>
-                    <p className="text-xs text-gray-500 mt-2">1 document</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.documents?.filter(doc => doc.type === 'Insurance').length || 0} document</p>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center mb-2">
@@ -911,7 +900,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Legal</h3>
                     </div>
                     <p className="text-sm text-gray-600">Consent forms, legal documents</p>
-                    <p className="text-xs text-gray-500 mt-2">1 document</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.documents?.filter(doc => doc.type === 'Legal').length || 0} document</p>
                   </div>
                 </div>
               </div>
