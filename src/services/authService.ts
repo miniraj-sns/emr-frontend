@@ -45,10 +45,15 @@ export interface ClientCredentialsResponse {
 export const getClientToken = async (): Promise<string> => {
   // Check if we have a valid token
   if (clientToken && clientTokenExpiry && Date.now() < clientTokenExpiry) {
+    console.log('Using cached client token');
     return clientToken;
   }
 
   try {
+    console.log('Getting new client token from:', `${BASE_URL}/oauth/token`);
+    console.log('Client ID:', CLIENT_ID);
+    console.log('Client Secret:', CLIENT_SECRET ? '***' : 'undefined');
+    
     const response: AxiosResponse<ClientCredentialsResponse> = await axios.post(
       `${BASE_URL}/oauth/token`,
       {
@@ -65,12 +70,14 @@ export const getClientToken = async (): Promise<string> => {
       }
     );
 
+    console.log('Client credentials response:', response.data);
     clientToken = response.data.access_token;
     clientTokenExpiry = Date.now() + (response.data.expires_in * 1000);
 
     return clientToken;
   } catch (error) {
     console.error('Failed to get client token:', error);
+    console.error('Error response:', error.response?.data);
     throw new Error('Failed to authenticate with the server');
   }
 };
@@ -106,10 +113,15 @@ apiClient.interceptors.response.use(
 // User authentication methods
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   try {
+    console.log('Attempting login for:', email);
+    console.log('Login URL:', `${API_URL}/login`);
+    
     const response: AxiosResponse<LoginResponse> = await apiClient.post('/login', {
       email,
       password,
     });
+
+    console.log('Login response:', response.data);
 
     // Store user token
     localStorage.setItem('user_token', response.data.access_token);
@@ -117,6 +129,10 @@ export const login = async (email: string, password: string): Promise<LoginRespo
 
     return response.data;
   } catch (error: any) {
+    console.error('Login error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }

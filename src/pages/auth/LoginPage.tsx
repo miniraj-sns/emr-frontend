@@ -26,12 +26,19 @@ export const LoginPage: React.FC = () => {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log('Form submitted with data:', data);
     try {
       clearError();
+      console.log('Attempting login...');
       await login(data.email, data.password);
+      console.log('Login successful, navigating to dashboard...');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -58,7 +65,6 @@ export const LoginPage: React.FC = () => {
               {...register('email')}
               error={errors.email?.message}
               placeholder="Enter your email"
-              required
             />
             
             <Input
@@ -67,7 +73,6 @@ export const LoginPage: React.FC = () => {
               {...register('password')}
               error={errors.password?.message}
               placeholder="Enter your password"
-              required
               endIcon={
                 <button
                   type="button"

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { loginStart, loginSuccess, loginFailure, logout as logoutAction, setUser, clearError as clearErrorAction } from '../features/auth/authSlice';
@@ -77,11 +76,6 @@ export const useAuth = () => {
   const clearError = () => {
     dispatch(clearErrorAction());
   };
-
-  // Check authentication on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
 
   return {
     user,

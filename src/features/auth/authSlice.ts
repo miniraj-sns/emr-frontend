@@ -16,12 +16,33 @@ export interface AuthState {
   error: string | null;
 }
 
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+// Initialize state from localStorage
+const getInitialState = (): AuthState => {
+  try {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      const user = JSON.parse(userData);
+      return {
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      };
+    }
+  } catch (error) {
+    console.error('Error parsing user data from localStorage:', error);
+    localStorage.removeItem('user_data');
+  }
+  
+  return {
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+  };
 };
+
+const initialState: AuthState = getInitialState();
 
 const authSlice = createSlice({
   name: 'auth',
