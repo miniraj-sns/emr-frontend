@@ -27,6 +27,7 @@ const Header: React.FC = () => {
 
   // Debug logging
   console.log('Header sidebar state:', sidebar)
+  console.log('Header sidebar isOpen:', sidebar?.isOpen)
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -54,8 +55,14 @@ const Header: React.FC = () => {
   }
 
   const handleToggleSidebar = () => {
-    console.log('Toggle sidebar clicked, current state:', sidebar.isOpen)
-    dispatch(toggleSidebar())
+    console.log('Toggle sidebar clicked, current state:', sidebar?.isOpen)
+    console.log('Dispatching toggleSidebar action')
+    try {
+      dispatch(toggleSidebar())
+      console.log('toggleSidebar action dispatched successfully')
+    } catch (error) {
+      console.error('Error dispatching toggleSidebar:', error)
+    }
   }
 
   const toggleUserMenu = () => setShowUserMenu(!showUserMenu)
@@ -65,12 +72,24 @@ const Header: React.FC = () => {
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - Sidebar toggle and search */}
+          {/* Left side - Logo, sidebar toggle and search */}
           <div className="flex items-center space-x-4">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">MB</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-semibold text-gray-900">MindBrite EMR</h1>
+                <p className="text-xs text-gray-500">Electronic Medical Records</p>
+              </div>
+            </div>
+            
             <button
               onClick={handleToggleSidebar}
               className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
               aria-label="Toggle sidebar"
+              type="button"
             >
               <MenuIcon className="h-6 w-6" />
             </button>

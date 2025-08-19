@@ -201,23 +201,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         />
       )}
       
-      {/* Sidebar - Full height */}
-      <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+      {/* Sidebar - Full height with flex layout */}
+      <div className={`lg:h-full lg:w-64 lg:bg-white lg:shadow-lg lg:flex lg:flex-col lg:relative lg:z-auto fixed left-0 top-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0 lg:h-screen`}>
+      } lg:translate-x-0`} style={{ height: 'calc(100vh - 65px)' }}>
         
-        {/* Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">MB</span>
-            </div>
-            <div className="ml-3">
-              <h1 className="text-lg font-semibold text-gray-900">MindBrite EMR</h1>
-              <p className="text-xs text-gray-500">Electronic Medical Records</p>
-            </div>
-          </div>
-          
+        
+
+        {/* User info */}
+        <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
           {/* Mobile close button */}
           <button 
             onClick={handleMobileClose}
@@ -225,10 +217,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           >
             <X className="h-6 w-6" />
           </button>
-        </div>
-
-        {/* User info */}
-        <div className="px-4 py-3 border-b border-gray-200">
           <div className="flex items-center">
             <div className="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center">
               <span className="text-sm font-medium text-white">
@@ -246,13 +234,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </div>
         </div>
 
-        {/* Navigation - Scrollable */}
+        {/* Navigation - Scrollable and flexible */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {menuItems.map(item => renderMenuItem(item))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-gray-200">
+        {/* Footer - Fixed at bottom */}
+        <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0">
           <div className="text-xs text-gray-500">
             <p>MindBrite EMR v1.0</p>
             <p>© 2025 MindBrite Health</p>
