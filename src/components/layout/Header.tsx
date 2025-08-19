@@ -25,6 +25,9 @@ const Header: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const notificationsRef = useRef<HTMLDivElement>(null)
 
+  // Debug logging
+  console.log('Header sidebar state:', sidebar)
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,6 +53,11 @@ const Header: React.FC = () => {
     }
   }
 
+  const handleToggleSidebar = () => {
+    console.log('Toggle sidebar clicked, current state:', sidebar.isOpen)
+    dispatch(toggleSidebar())
+  }
+
   const toggleUserMenu = () => setShowUserMenu(!showUserMenu)
   const toggleNotifications = () => setShowNotifications(!showNotifications)
 
@@ -60,7 +68,7 @@ const Header: React.FC = () => {
           {/* Left side - Sidebar toggle and search */}
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => dispatch(toggleSidebar())}
+              onClick={handleToggleSidebar}
               className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
               aria-label="Toggle sidebar"
             >

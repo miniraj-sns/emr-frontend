@@ -37,6 +37,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const { user } = useSelector((state: RootState) => state.auth)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
 
+  // Debug logging
+  console.log('Sidebar isOpen:', isOpen)
+
   const toggleMenu = (menuName: string) => {
     setExpandedMenus(prev => 
       prev.includes(menuName) 
@@ -46,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   }
 
   const handleMobileClose = () => {
+    console.log('Mobile close clicked')
     dispatch(toggleSidebar())
   }
 
@@ -198,9 +202,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       )}
       
       {/* Sidebar - Full height */}
-      <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+      <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0 lg:h-full`}>
+      } lg:translate-x-0 lg:static lg:inset-0 lg:h-screen`}>
         
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">

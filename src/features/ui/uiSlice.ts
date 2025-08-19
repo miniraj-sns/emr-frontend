@@ -21,7 +21,7 @@ export interface UIState {
 
 const initialState: UIState = {
   sidebar: {
-    isOpen: false,
+    isOpen: true, // Start with sidebar open
   },
   modals: {},
   notifications: [],
