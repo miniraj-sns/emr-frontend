@@ -12,12 +12,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { sidebar } = useSelector((state: RootState) => state.ui)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       <Sidebar isOpen={sidebar.isOpen} />
-      <div className={`transition-all duration-300 ${sidebar.isOpen ? 'ml-64' : 'ml-0'}`}>
+      
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col lg:ml-0">
         <Header />
-        <main className="p-6">
-          {children}
+        
+        {/* Page content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>
