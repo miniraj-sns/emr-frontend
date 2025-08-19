@@ -1,63 +1,87 @@
-import { useCallback } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import { RootState } from '../store'
-import { loginStart, loginSuccess, loginFailure, logout } from '../features/auth/authSlice'
-import { authService, LoginCredentials } from '../services/api/authService'
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { loginStart, loginSuccess, loginFailure, logout as logoutAction, setUser, clearError as clearErrorAction } from '../features/auth/authSlice';
+import * as authService from '../services/authService';
 
 export const useAuth = () => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const { user, isAuthenticated, isLoading, error } = useSelector(
-    (state: RootState) => state.auth
-  )
+  const dispatch = useDispatch();
+  const { user, isAuthenticated, isLoading, error } = useSelector((state: RootState) => state.auth);
 
-  const login = useCallback(
-    async (credentials: LoginCredentials) => {
-      try {
-        dispatch(loginStart())
-        const response = await authService.login(credentials)
-        dispatch(loginSuccess(response))
-        navigate('/dashboard')
-        return { success: true }
-      } catch (error: any) {
-        dispatch(loginFailure(error.message))
-        return { success: false, error: error.message }
-      }
-    },
-    [dispatch, navigate]
-  )
-
-  const logoutUser = useCallback(async () => {
+  const login = async (email: string, password: string) => {
     try {
-      await authService.logout()
-      dispatch(logout())
-      navigate('/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-      // Still clear local state even if API call fails
-      dispatch(logout())
-      navigate('/login')
+      dispatch(loginStart());
+      const response = await authService.login(email, password);
+      dispatch(loginSuccess(response.user));
+      return response;
+    } catch (error: any) {
+      dispatch(loginFailure(error.message));
+      throw error;
     }
-  }, [dispatch, navigate])
+  };
 
-  const checkAuth = useCallback(async () => {
-    if (authService.isAuthenticated() && !user) {
-      try {
-        const userData = await authService.getCurrentUser()
-        // Create a mock login response for the current user
-        const mockResponse = {
-          user: userData,
-          access_token: authService.getToken() || '',
-          token_type: 'Bearer'
-        }
-        dispatch(loginSuccess(mockResponse))
-      } catch (error) {
-        dispatch(logout())
-        navigate('/login')
-      }
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      dispatch(logoutAction());
     }
-  }, [dispatch, navigate, user])
+  };
+
+  const checkAuth = async () => {
+    try {
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        const user = JSON.parse(userData);
+        dispatch(setUser(user));
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      dispatch(logoutAction());
+    }
+  };
+
+  const refreshAuth = async () => {
+    try {
+      const response = await authService.refreshToken();
+      dispatch(loginSuccess(response.user));
+      return response;
+    } catch (error) {
+      dispatch(logoutAction());
+      throw error;
+    }
+  };
+
+  const getCurrentUser = async () => {
+    try {
+      const user = await authService.getCurrentUser();
+      dispatch(setUser(user));
+      return user;
+    } catch (error) {
+      dispatch(logoutAction());
+      throw error;
+    }
+  };
+
+  const getUserPermissions = async () => {
+    try {
+      return await authService.getUserPermissions();
+    } catch (error) {
+      console.error('Failed to get user permissions:', error);
+      return [];
+    }
+  };
+
+  const clearError = () => {
+    dispatch(clearErrorAction());
+  };
+
+  // Check authentication on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   return {
     user,
@@ -65,7 +89,11 @@ export const useAuth = () => {
     isLoading,
     error,
     login,
-    logout: logoutUser,
+    logout,
     checkAuth,
-  }
-} 
+    refreshAuth,
+    getCurrentUser,
+    getUserPermissions,
+    clearError,
+  };
+}; 

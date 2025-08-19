@@ -1,0 +1,5 @@
+Client ID ............................. 0198c150-0a48-7056-b356-73151b7fe588  
+Client Secret ..................... 1GBHurnSCt0BrtXGcGE1yGXkP8rOATtMH9p87IH5  
+
+Client ID ............................. 0198c150-7857-7054-bb82-43042e21775f  
+Client Secret ..................... OqUtjZMU5Sl9LZo0ag2ULncFoYLJDgB8M9bSnxuF  
