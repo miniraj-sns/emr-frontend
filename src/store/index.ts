@@ -3,7 +3,7 @@ import { setupListeners } from '@reduxjs/toolkit/query'
 
 import authReducer from '@/features/auth/authSlice'
 import uiReducer from '@/features/ui/uiSlice'
-import patientsReducer from '@/features/patients/patientsSlice'
+import patientReducer from '@/features/patients/patientSlice'
 import appointmentsReducer from '@/features/appointments/appointmentsSlice'
 import crmReducer from '@/features/crm/crmSlice'
 
@@ -11,7 +11,7 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     ui: uiReducer,
-    patients: patientsReducer,
+    patients: patientReducer,
     appointments: appointmentsReducer,
     crm: crmReducer,
   },

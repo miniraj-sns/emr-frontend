@@ -25,7 +25,7 @@ import {
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 
-const PatientsPage: React.FC = () => {
+const PatientListPage: React.FC = () => {
   const dispatch = useDispatch()
   const { 
     patients, 
@@ -411,4 +411,4 @@ const PatientsPage: React.FC = () => {
   )
 }
 
-export default PatientsPage 
+export default PatientListPage 

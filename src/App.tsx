@@ -8,6 +8,7 @@ import { store } from './store'
 import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import PatientsPage from './pages/patients/PatientsPage'
+import PatientDetailPage from './pages/patients/PatientDetailPage'
 import AppointmentsPage from './pages/appointments/AppointmentsPage'
 import CRMPage from './pages/crm/CRMPage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -41,12 +42,52 @@ const App: React.FC = () => {
                 }
               />
               
+              {/* Patient Routes */}
               <Route
                 path="/patients"
                 element={
                   <ProtectedRoute>
                     <Layout>
                       <PatientsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/patients/new"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold text-gray-900">Create New Patient</h1>
+                        <p className="text-gray-600 mt-2">Patient creation form coming soon...</p>
+                      </div>
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/patients/:id"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PatientDetailPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/patients/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold text-gray-900">Edit Patient</h1>
+                        <p className="text-gray-600 mt-2">Patient edit form coming soon...</p>
+                      </div>
                     </Layout>
                   </ProtectedRoute>
                 }

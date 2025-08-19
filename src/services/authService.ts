@@ -82,13 +82,29 @@ export const getClientToken = async (): Promise<string> => {
   }
 };
 
-// Set up request interceptor to add client token
+// Set up request interceptor to add appropriate token
 apiClient.interceptors.request.use(
   async (config: AxiosRequestConfig) => {
-    // Add client token for all requests
-    const token = await getClientToken();
-    if (config.headers && token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Check if this is a login request - don't add client token for login
+    if (config.url === '/login' || config.url === '/register') {
+      console.log('Login/register request - not adding client token');
+      return config;
+    }
+
+    // For all other requests, check if we have a user token first
+    const userToken = localStorage.getItem('user_token');
+    if (userToken) {
+      console.log('Using user token for request:', config.url);
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${userToken}`;
+      }
+    } else {
+      // Fall back to client token if no user token
+      console.log('No user token, using client token for request:', config.url);
+      const clientToken = await getClientToken();
+      if (config.headers && clientToken) {
+        config.headers.Authorization = `Bearer ${clientToken}`;
+      }
     }
     return config;
   },
@@ -102,9 +118,12 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Clear client token on 401
+      console.log('401 error - clearing tokens');
+      // Clear both tokens on 401
       clientToken = null;
       clientTokenExpiry = null;
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_data');
     }
     return Promise.reject(error);
   }
@@ -116,7 +135,17 @@ export const login = async (email: string, password: string): Promise<LoginRespo
     console.log('Attempting login for:', email);
     console.log('Login URL:', `${API_URL}/login`);
     
-    const response: AxiosResponse<LoginResponse> = await apiClient.post('/login', {
+    // Create a separate axios instance for login (no interceptors)
+    const loginClient = axios.create({
+      baseURL: API_URL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+    
+    const response: AxiosResponse<LoginResponse> = await loginClient.post('/login', {
       email,
       password,
     });
@@ -144,7 +173,8 @@ export const logout = async (): Promise<void> => {
   try {
     const userToken = localStorage.getItem('user_token');
     if (userToken) {
-      await apiClient.post('/auth/logout', {}, {
+      console.log('Attempting logout with user token');
+      await apiClient.post('/logout', {}, {
         headers: {
           'Authorization': `Bearer ${userToken}`,
         },
@@ -153,9 +183,13 @@ export const logout = async (): Promise<void> => {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
+    console.log('Clearing all tokens and user data');
     // Clear local storage
     localStorage.removeItem('user_token');
     localStorage.removeItem('user_data');
+    // Clear client token as well
+    clientToken = null;
+    clientTokenExpiry = null;
   }
 };
 
