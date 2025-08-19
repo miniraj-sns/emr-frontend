@@ -312,7 +312,12 @@ const PatientDetailPage: React.FC = () => {
                     <div className="flex items-center justify-center mb-2">
                       <Activity className="h-5 w-5 text-red-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{latestVitals?.blood_pressure}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {latestVitals?.blood_pressure_systolic && latestVitals?.blood_pressure_diastolic 
+                        ? `${latestVitals.blood_pressure_systolic}/${latestVitals.blood_pressure_diastolic}`
+                        : 'N/A'
+                      }
+                    </p>
                     <p className="text-xs text-gray-500">BP</p>
                   </div>
                   <div className="text-center">
@@ -393,7 +398,7 @@ const PatientDetailPage: React.FC = () => {
                     {activeMedications.slice(0, 3).map((medication, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{medication.name}</p>
+                          <p className="text-sm font-medium text-gray-900">{medication.medication_name}</p>
                           <p className="text-xs text-gray-600">{medication.dosage} • {medication.frequency}</p>
                         </div>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -524,7 +529,7 @@ const PatientDetailPage: React.FC = () => {
                   {activeMedications.map((medication, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div>
-                        <p className="font-medium text-gray-900">{medication.name}</p>
+                        <p className="font-medium text-gray-900">{medication.medication_name}</p>
                         <p className="text-sm text-gray-600">{medication.dosage} • {medication.frequency}</p>
                       </div>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
