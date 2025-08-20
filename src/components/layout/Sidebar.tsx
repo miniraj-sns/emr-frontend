@@ -77,7 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       href: '/appointments',
       icon: Calendar,
       children: [
-        { name: 'Calendar', href: '/appointments', icon: Calendar },
+        { name: 'All Appointments', href: '/appointments', icon: Calendar },
+        { name: 'Calendar', href: '/appointments/calendar', icon: Calendar },
         { name: 'Video Sessions', href: '/appointments/video', icon: MessageSquare },
         { name: 'Schedule', href: '/appointments/schedule', icon: Calendar }
       ]

@@ -10,6 +10,7 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 import PatientsPage from './pages/patients/PatientsPage'
 import PatientDetailPage from './pages/patients/PatientDetailPage'
 import AppointmentsPage from './pages/appointments/AppointmentsPage'
+import CalendarPage from './pages/appointments/CalendarPage'
 import CRMPage from './pages/crm/CRMPage'
 import SettingsPage from './pages/settings/SettingsPage'
 
@@ -99,6 +100,17 @@ const App: React.FC = () => {
                   <ProtectedRoute>
                     <Layout>
                       <AppointmentsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/appointments/calendar"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CalendarPage />
                     </Layout>
                   </ProtectedRoute>
                 }

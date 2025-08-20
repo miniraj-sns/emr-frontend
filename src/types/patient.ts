@@ -25,6 +25,9 @@ export interface Patient {
   assigned_coach?: User
   vital_signs?: PatientVitalSigns[]
   medications?: PatientMedication[]
+  appointments?: Appointment[]
+  files?: PatientFile[]
+  patient_notes?: PatientNote[]
 }
 
 export interface User {
@@ -132,23 +135,30 @@ export interface UpdatePatientRequest extends Partial<CreatePatientRequest> {}
 export interface PatientNote {
   id: number
   patient_id: number
+  author_user_id: number
   type?: string
   content: string
   is_provider_visible: boolean
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
+  author?: User
 }
 
 export interface PatientFile {
   id: number
   patient_id: number
   filename: string
-  original_name: string
+  original_filename: string
+  file_path: string
+  file_type: string
+  file_size: string
   mime_type: string
-  size: number
-  path: string
+  uploaded_by_user_id: number
+  metadata?: Record<string, any>
   created_at: string
   updated_at: string
+  uploaded_by?: User
 }
 
 export interface PatientReport {

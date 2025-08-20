@@ -29,11 +29,15 @@ import {
   CreditCard,
   Thermometer,
   Weight,
-  Ruler
+  Ruler,
+  X,
+  CheckCircle,
+  XCircle
 } from 'lucide-react'
 import { RootState } from '../../store'
 import { fetchPatient, deletePatient } from '../../features/patients/patientSlice'
 import Button from '../../components/ui/Button'
+import ScheduleAppointmentModal from '../../components/appointments/ScheduleAppointmentModal'
 
 const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -43,6 +47,14 @@ const PatientDetailPage: React.FC = () => {
   const { currentPatient, loading, error } = useSelector((state: RootState) => state.patients)
   const [isDeleting, setIsDeleting] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false)
+  const [noteForm, setNoteForm] = useState({
+    content: '',
+    type: 'general',
+    is_provider_visible: false
+  })
+  const [isAddingNote, setIsAddingNote] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -63,6 +75,68 @@ const PatientDetailPage: React.FC = () => {
       console.error('Failed to delete patient:', error)
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!currentPatient || !noteForm.content.trim()) {
+      return
+    }
+
+    setIsAddingNote(true)
+    try {
+      // Import the patientService to add note
+      const { patientService } = await import('../../services/patientService')
+      await patientService.createPatientNote(currentPatient.id, {
+        content: noteForm.content,
+        type: noteForm.type,
+        is_provider_visible: noteForm.is_provider_visible
+      })
+      
+      // Refresh patient data to show new note
+      dispatch(fetchPatient(currentPatient.id))
+      
+      // Reset form and close modal
+      setNoteForm({
+        content: '',
+        type: 'general',
+        is_provider_visible: false
+      })
+      setShowAddNoteModal(false)
+    } catch (error) {
+      console.error('Failed to add note:', error)
+    } finally {
+      setIsAddingNote(false)
+    }
+  }
+
+  const handleQuickNote = async () => {
+    if (!currentPatient || !noteForm.content.trim()) {
+      return
+    }
+
+    setIsAddingNote(true)
+    try {
+      const { patientService } = await import('../../services/patientService')
+      await patientService.createPatientNote(currentPatient.id, {
+        content: noteForm.content,
+        type: 'quick',
+        is_provider_visible: false
+      })
+      
+      // Refresh patient data
+      dispatch(fetchPatient(currentPatient.id))
+      
+      // Reset form
+      setNoteForm({
+        content: '',
+        type: 'general',
+        is_provider_visible: false
+      })
+    } catch (error) {
+      console.error('Failed to add quick note:', error)
+    } finally {
+      setIsAddingNote(false)
     }
   }
 
@@ -177,6 +251,7 @@ const PatientDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'medical', label: 'Medical History', icon: Stethoscope },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
+    { id: 'notes', label: 'Notes', icon: MessageSquare },
     { id: 'insurance', label: 'Insurance', icon: Shield },
     { id: 'documents', label: 'Documents', icon: FileImage }
   ]
@@ -444,9 +519,13 @@ const PatientDetailPage: React.FC = () => {
                   <div className="space-y-2">
                     {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').slice(0, 2).map((appointment, index) => (
                       <div key={index} className="p-2 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm font-medium text-gray-900">{appointment.type}</p>
-                        <p className="text-xs text-gray-600">{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</p>
-                        <p className="text-xs text-gray-500">with {appointment.provider}</p>
+                        <p className="text-sm font-medium text-gray-900 capitalize">{appointment.type}</p>
+                        <p className="text-xs text-gray-600">
+                          {new Date(appointment.scheduled_at).toLocaleDateString()} at {new Date(appointment.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {appointment.provider ? `with ${appointment.provider.first_name} ${appointment.provider.last_name}` : 'No provider assigned'}
+                        </p>
                       </div>
                     ))}
                     {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').length === 0 && (
@@ -469,41 +548,61 @@ const PatientDetailPage: React.FC = () => {
 
               {/* Assigned Staff */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  Assigned Staff
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Assigned Staff
+                  </h2>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Assign Staff
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentPatient.referring_provider && (
-                    <div className="flex items-center p-3 border border-gray-200 rounded-lg">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                        <User className="h-5 w-5 text-blue-600" />
+                    <div className="flex items-center p-4 border border-gray-200 rounded-lg">
+                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                        <User className="h-6 w-6 text-blue-600" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">Referring Provider</p>
                         <p className="text-sm text-gray-600">
                           {currentPatient.referring_provider.first_name} {currentPatient.referring_provider.last_name}
                         </p>
+                        <p className="text-xs text-gray-500">{currentPatient.referring_provider.email}</p>
                       </div>
+                      <Button size="sm" variant="outline">
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        Contact
+                      </Button>
                     </div>
                   )}
                   {currentPatient.assigned_coach && (
-                    <div className="flex items-center p-3 border border-gray-200 rounded-lg">
-                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                        <User className="h-5 w-5 text-green-600" />
+                    <div className="flex items-center p-4 border border-gray-200 rounded-lg">
+                      <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+                        <User className="h-6 w-6 text-green-600" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">Assigned Coach</p>
                         <p className="text-sm text-gray-600">
                           {currentPatient.assigned_coach.first_name} {currentPatient.assigned_coach.last_name}
                         </p>
+                        <p className="text-xs text-gray-500">{currentPatient.assigned_coach.email}</p>
                       </div>
+                      <Button size="sm" variant="outline">
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        Contact
+                      </Button>
                     </div>
                   )}
                   {!currentPatient.referring_provider && !currentPatient.assigned_coach && (
                     <div className="col-span-2 text-center py-8">
                       <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No staff assigned</p>
+                      <p className="text-gray-500 mb-2">No staff assigned</p>
+                      <Button size="sm" variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Assign Staff Member
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -657,6 +756,46 @@ const PatientDetailPage: React.FC = () => {
 
           {activeTab === 'appointments' && (
             <div className="space-y-6">
+              {/* Appointment Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center">
+                    <Calendar className="h-8 w-8 text-blue-500 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total</p>
+                      <p className="text-2xl font-bold text-gray-900">{currentPatient.appointments?.length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center">
+                    <Clock className="h-8 w-8 text-green-500 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Scheduled</p>
+                      <p className="text-2xl font-bold text-gray-900">{currentPatient.appointments?.filter(apt => apt.status === 'scheduled').length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Completed</p>
+                      <p className="text-2xl font-bold text-gray-900">{currentPatient.appointments?.filter(apt => apt.status === 'completed').length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center">
+                    <XCircle className="h-8 w-8 text-red-500 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">No Show</p>
+                      <p className="text-2xl font-bold text-gray-900">{currentPatient.appointments?.filter(apt => apt.status === 'no_show').length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Upcoming Appointments */}
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -664,7 +803,11 @@ const PatientDetailPage: React.FC = () => {
                     <Calendar className="h-5 w-5 mr-2" />
                     Upcoming Appointments
                   </h2>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setShowScheduleModal(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Schedule Appointment
                   </Button>
@@ -674,12 +817,21 @@ const PatientDetailPage: React.FC = () => {
                     <div key={index} className="flex items-center justify-between p-4 border border-blue-200 rounded-lg bg-blue-50">
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{new Date(appointment.date).toLocaleDateString()}</p>
-                          <p className="text-xs text-gray-600">{appointment.time}</p>
+                          <p className="text-sm font-medium text-gray-900">{new Date(appointment.scheduled_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-600">{new Date(appointment.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          <p className="text-xs text-gray-500">{appointment.duration_minutes} min</p>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{appointment.type}</p>
-                          <p className="text-sm text-gray-600">with {appointment.provider}</p>
+                          <p className="font-medium text-gray-900 capitalize">{appointment.type}</p>
+                          <p className="text-sm text-gray-600">
+                            {appointment.provider ? `with ${appointment.provider.first_name} ${appointment.provider.last_name}` : 'No provider assigned'}
+                          </p>
+                          {appointment.coach && (
+                            <p className="text-xs text-gray-500">Coach: {appointment.coach.first_name} {appointment.coach.last_name}</p>
+                          )}
+                          {appointment.location && (
+                            <p className="text-xs text-gray-500">{appointment.location}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -690,6 +842,10 @@ const PatientDetailPage: React.FC = () => {
                         <Button size="sm" variant="outline">
                           <MessageSquare className="h-4 w-4 mr-1" />
                           Message
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Button>
                       </div>
                     </div>
@@ -710,21 +866,34 @@ const PatientDetailPage: React.FC = () => {
                   Recent Appointments
                 </h2>
                 <div className="space-y-3">
-                  {currentPatient.appointments?.filter(apt => apt.status === 'completed').map((appointment, index) => (
+                  {currentPatient.appointments?.filter(apt => ['completed', 'no_show', 'canceled'].includes(apt.status)).slice(0, 5).map((appointment, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{new Date(appointment.date).toLocaleDateString()}</p>
-                          <p className="text-xs text-gray-600">{appointment.time}</p>
+                          <p className="text-sm font-medium text-gray-900">{new Date(appointment.scheduled_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-600">{new Date(appointment.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          <p className="text-xs text-gray-500">{appointment.duration_minutes} min</p>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{appointment.type}</p>
-                          <p className="text-sm text-gray-600">with {appointment.provider}</p>
+                          <p className="font-medium text-gray-900 capitalize">{appointment.type}</p>
+                          <p className="text-sm text-gray-600">
+                            {appointment.provider ? `with ${appointment.provider.first_name} ${appointment.provider.last_name}` : 'No provider assigned'}
+                          </p>
+                          {appointment.coach && (
+                            <p className="text-xs text-gray-500">Coach: {appointment.coach.first_name} {appointment.coach.last_name}</p>
+                          )}
+                          {appointment.notes && (
+                            <p className="text-xs text-gray-500">{appointment.notes}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Completed
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          appointment.status === 'no_show' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {appointment.status.replace('_', ' ').toUpperCase()}
                         </span>
                         <Button size="sm" variant="outline">
                           <FileText className="h-4 w-4 mr-1" />
@@ -733,12 +902,85 @@ const PatientDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {currentPatient.appointments?.filter(apt => apt.status === 'completed').length === 0 && (
+                  {currentPatient.appointments?.filter(apt => ['completed', 'no_show', 'canceled'].includes(apt.status)).length === 0 && (
                     <div className="text-center py-8">
                       <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No recent appointments</p>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <div className="space-y-6">
+              {/* Patient Notes */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <MessageSquare className="h-5 w-5 mr-2" />
+                    Patient Notes
+                  </h2>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setShowAddNoteModal(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Note
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {currentPatient.patient_notes?.map((note, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {note.type || 'General'}
+                          </span>
+                          {note.is_provider_visible && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Provider Visible
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {new Date(note.created_at).toLocaleDateString()} by {note.author?.first_name} {note.author?.last_name}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                    </div>
+                  ))}
+                  {(!currentPatient.patient_notes || currentPatient.patient_notes.length === 0) && (
+                    <div className="text-center py-8">
+                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">No notes available for this patient</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Notes */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Notes</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Add a quick note..."
+                      value={noteForm.content}
+                      onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={handleQuickNote}
+                      disabled={isAddingNote || !noteForm.content.trim()}
+                    >
+                      {isAddingNote ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -847,15 +1089,15 @@ const PatientDetailPage: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {currentPatient.documents?.map((document, index) => (
+                  {currentPatient.files?.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-gray-100 rounded">
                           <FileImage className="h-5 w-5 text-gray-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{document.name}</p>
-                          <p className="text-sm text-gray-600">{document.type} • {document.size} • {new Date(document.date).toLocaleDateString()}</p>
+                          <p className="font-medium text-gray-900">{file.filename}</p>
+                          <p className="text-sm text-gray-600">{file.file_type} • {file.file_size} • {new Date(file.created_at).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -870,7 +1112,7 @@ const PatientDetailPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {currentPatient.documents?.length === 0 && (
+                  {(!currentPatient.files || currentPatient.files.length === 0) && (
                     <div className="text-center py-8">
                       <FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">No documents uploaded</p>
@@ -889,7 +1131,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Medical Records</h3>
                     </div>
                     <p className="text-sm text-gray-600">Lab results, test reports, medical notes</p>
-                    <p className="text-xs text-gray-500 mt-2">{currentPatient.lab_results?.length || 0} documents</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.files?.filter(file => file.file_type === 'medical').length || 0} documents</p>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center mb-2">
@@ -897,7 +1139,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Insurance</h3>
                     </div>
                     <p className="text-sm text-gray-600">Insurance cards, policy documents</p>
-                    <p className="text-xs text-gray-500 mt-2">{currentPatient.documents?.filter(doc => doc.type === 'Insurance').length || 0} document</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.files?.filter(file => file.file_type === 'insurance').length || 0} document</p>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center mb-2">
@@ -905,7 +1147,7 @@ const PatientDetailPage: React.FC = () => {
                       <h3 className="font-medium text-gray-900">Legal</h3>
                     </div>
                     <p className="text-sm text-gray-600">Consent forms, legal documents</p>
-                    <p className="text-xs text-gray-500 mt-2">{currentPatient.documents?.filter(doc => doc.type === 'Legal').length || 0} document</p>
+                    <p className="text-xs text-gray-500 mt-2">{currentPatient.files?.filter(file => file.file_type === 'legal').length || 0} document</p>
                   </div>
                 </div>
               </div>
@@ -913,6 +1155,94 @@ const PatientDetailPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Add Note Modal */}
+      {showAddNoteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add Patient Note</h3>
+              <button
+                onClick={() => setShowAddNoteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Note Type
+                </label>
+                <select
+                  value={noteForm.type}
+                  onChange={(e) => setNoteForm({ ...noteForm, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="general">General</option>
+                  <option value="medical">Medical</option>
+                  <option value="behavioral">Behavioral</option>
+                  <option value="progress">Progress</option>
+                  <option value="concern">Concern</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Note Content
+                </label>
+                <textarea
+                  value={noteForm.content}
+                  onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter your note here..."
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="provider-visible"
+                  checked={noteForm.is_provider_visible}
+                  onChange={(e) => setNoteForm({ ...noteForm, is_provider_visible: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="provider-visible" className="ml-2 block text-sm text-gray-700">
+                  Make visible to provider
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddNoteModal(false)}
+                disabled={isAddingNote}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddNote}
+                disabled={isAddingNote || !noteForm.content.trim()}
+              >
+                {isAddingNote ? 'Adding...' : 'Add Note'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Appointment Modal */}
+      <ScheduleAppointmentModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        patientId={currentPatient?.id}
+        onSuccess={() => {
+          dispatch(fetchPatient(currentPatient?.id || 0))
+        }}
+      />
     </div>
   )
 }
