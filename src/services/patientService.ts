@@ -252,6 +252,34 @@ export const patientService = {
     const response = await apiClient.delete(`/patients/${patientId}/medications/${medicationId}`)
     return response.data
   },
+
+  // Patient Timeline
+  async getPatientTimeline(patientId: number, filters?: {
+    start_date?: string
+    end_date?: string
+    type?: 'appointment' | 'note' | 'file' | 'form' | 'report'
+  }): Promise<{
+    patient_id: number
+    timeline: Array<{
+      id: string
+      event_type: 'appointment' | 'note' | 'file' | 'form' | 'report'
+      event_date: string
+      title: string
+      description: string
+      status: string
+      metadata: Record<string, any>
+      created_at: string
+    }>
+  }> {
+    const params = new URLSearchParams()
+    
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.type) params.append('type', filters.type)
+
+    const response = await apiClient.get(`/patients/${patientId}/timeline?${params.toString()}`)
+    return response.data
+  },
 }
 
 export default patientService 
