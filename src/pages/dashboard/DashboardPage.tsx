@@ -19,7 +19,7 @@ import {
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useSelector((state: RootState) => state.auth)
-  const { patients, isLoading: patientsLoading } = useSelector((state: RootState) => state.patients)
+  const { patients, loading: patientsLoading } = useSelector((state: RootState) => state.patients)
   const { statistics, isLoading: statsLoading } = useSelector((state: RootState) => state.crm)
   
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -41,10 +41,12 @@ const DashboardPage: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      await Promise.all([
+      console.log('Loading dashboard data...')
+      const results = await Promise.all([
         dispatch(fetchPatients({})).unwrap(),
         dispatch(fetchStatistics()).unwrap()
       ])
+      console.log('Dashboard data loaded:', results)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
     }
@@ -69,6 +71,11 @@ const DashboardPage: React.FC = () => {
     const totalOpportunities = statistics?.total_opportunities || 0
     const totalValue = statistics?.total_value || 0
 
+    // Debug logging
+    console.log('Dashboard - Patients:', patients)
+    console.log('Dashboard - Total Patients:', totalPatients)
+    console.log('Dashboard - Statistics:', statistics)
+
     // Calculate trends (you can implement real trend calculation based on historical data)
     const patientTrend = totalPatients > 0 ? '+5%' : '0%'
     const leadTrend = totalLeads > 0 ? '+12%' : '0%'
@@ -78,13 +85,13 @@ const DashboardPage: React.FC = () => {
     return [
       {
         name: 'Total Patients',
-        value: totalPatients.toLocaleString(),
+        value: totalPatients > 0 ? totalPatients.toLocaleString() : '0',
         change: patientTrend,
         changeType: 'positive',
         icon: Users,
         color: 'bg-blue-500',
         trend: 'up',
-        loading: patientsLoading
+        loading: patientsLoading.list
       },
       {
         name: 'Appointments Today',
@@ -141,7 +148,7 @@ const DashboardPage: React.FC = () => {
     }
 
     // Add CRM activities if available
-    if (statistics?.total_leads > 0) {
+    if (statistics && statistics.total_leads > 0) {
       activities.push({
         id: 'lead-activity',
         type: 'lead',
@@ -264,7 +271,9 @@ const DashboardPage: React.FC = () => {
                     <div className="h-8 bg-gray-200 rounded w-20 mb-2"></div>
                   </div>
                 ) : (
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stat.value || '0'}
+                  </p>
                 )}
                 <div className="flex items-center mt-1">
                   <TrendingUp className={`h-4 w-4 mr-1 ${
