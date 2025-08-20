@@ -54,11 +54,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   }
 
   const isActive = (href: string) => {
-    const active = location.pathname === href
-    // Debug logging for CRM routes
-    if (href.includes('/crm')) {
-      console.log(`Sidebar - Checking if ${href} is active: ${active}, current path: ${location.pathname}`)
+    // Special case for dashboard - highlight when on /dashboard
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard'
     }
+    
+    // For CRM routes, check if current path starts with the href
+    if (href.includes('/crm')) {
+      const active = location.pathname.startsWith(href)
+      console.log(`Sidebar - Checking if ${href} is active: ${active}, current path: ${location.pathname}`)
+      return active
+    }
+    
+    // For other routes, check exact match
+    const active = location.pathname === href
     return active
   }
   
