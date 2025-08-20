@@ -105,6 +105,7 @@ const App: React.FC = () => {
                 }
               />
               
+              {/* CRM Routes */}
               <Route
                 path="/appointments/calendar"
                 element={
@@ -128,6 +129,61 @@ const App: React.FC = () => {
               />
               
               <Route
+                path="/crm/leads"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CRMPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/crm/contacts"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CRMPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/crm/opportunities"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CRMPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/crm/followups"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CRMPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/crm/pipelines"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CRMPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
                 path="/settings"
                 element={
                   <ProtectedRoute>
@@ -141,7 +197,7 @@ const App: React.FC = () => {
               {/* Default redirect */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               
-              {/* Catch all route */}
+              {/* Catch all route - only for truly unmatched routes */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

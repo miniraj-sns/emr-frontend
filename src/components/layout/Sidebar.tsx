@@ -53,8 +53,31 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     dispatch(toggleSidebar())
   }
 
-  const isActive = (href: string) => location.pathname === href
-  const isMenuExpanded = (menuName: string) => expandedMenus.includes(menuName)
+  const isActive = (href: string) => {
+    // Special case for dashboard - highlight when on /dashboard
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard'
+    }
+    
+    // For CRM routes, check if current path starts with the href
+    if (href.includes('/crm')) {
+      const active = location.pathname.startsWith(href)
+      console.log(`Sidebar - Checking if ${href} is active: ${active}, current path: ${location.pathname}`)
+      return active
+    }
+    
+    // For other routes, check exact match
+    const active = location.pathname === href
+    return active
+  }
+  
+  const isMenuExpanded = (menuName: string) => {
+    // Auto-expand CRM menu if we're on any CRM page
+    if (menuName === 'CRM' && location.pathname.startsWith('/crm')) {
+      return true
+    }
+    return expandedMenus.includes(menuName)
+  }
 
   const menuItems: MenuItem[] = [
     {
@@ -88,9 +111,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       href: '/crm',
       icon: Building2,
       children: [
+        { name: 'Dashboard', href: '/crm', icon: LayoutDashboard },
         { name: 'Leads', href: '/crm/leads', icon: Users },
+        { name: 'Contacts', href: '/crm/contacts', icon: Users },
         { name: 'Opportunities', href: '/crm/opportunities', icon: Building2 },
-        { name: 'Pipelines', href: '/crm/pipelines', icon: BarChart3 }
+        { name: 'Follow-ups', href: '/crm/followups', icon: Calendar }
       ]
     },
     {
