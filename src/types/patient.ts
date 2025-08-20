@@ -1,3 +1,5 @@
+import { Appointment } from './appointment'
+
 export interface Patient {
   id: number
   first_name: string
@@ -169,4 +171,26 @@ export interface PatientReport {
   status: 'draft' | 'published'
   created_at: string
   updated_at: string
+}
+
+export interface PatientTimelineEvent {
+  id: string
+  event_type: 'appointment' | 'note' | 'file' | 'form' | 'report'
+  event_date: string
+  title: string
+  description: string
+  status: string
+  metadata: Record<string, any>
+  created_at: string
+}
+
+export interface PatientTimelineResponse {
+  patient_id: number
+  timeline: PatientTimelineEvent[]
+}
+
+export interface PatientTimelineFilters {
+  start_date?: string
+  end_date?: string
+  type?: 'appointment' | 'note' | 'file' | 'form' | 'report'
 } 

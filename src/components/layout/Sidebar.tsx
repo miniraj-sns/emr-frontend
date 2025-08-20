@@ -91,7 +91,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       icon: Users,
       children: [
         { name: 'All Patients', href: '/patients', icon: Users },
-        { name: 'Patient Timeline', href: '/patients/timeline', icon: FileText },
         { name: 'Forms', href: '/patients/forms', icon: FileText }
       ]
     },
