@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User,
 import { RootState } from '../../store'
 import { fetchAppointments } from '../../features/appointments/appointmentsSlice'
 import Button from '../../components/ui/Button'
-import AdvancedScheduleModal from '../../components/appointments/AdvancedScheduleModal'
+import AppointmentSchedulingModal from '../../components/appointments/AppointmentSchedulingModal'
 
 type ViewType = 'month' | 'week' | 'day'
 
@@ -13,12 +13,12 @@ const CalendarPage: React.FC = () => {
   const { appointments } = useSelector((state: RootState) => state.appointments)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewType, setViewType] = useState<ViewType>('month')
-  const [showAdvancedModal, setShowAdvancedModal] = useState(false)
+  const [showSchedulingModal, setShowSchedulingModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
 
   useEffect(() => {
-    dispatch(fetchAppointments())
+    dispatch(fetchAppointments({}))
   }, [dispatch])
 
   const goToPrevious = () => {
@@ -163,21 +163,85 @@ const CalendarPage: React.FC = () => {
               </div>
               {weekDays.map(day => {
                 const events = getEventsForTimeSlot(day, slot.hour, slot.minute)
+                const hasEvents = events.length > 0
                 return (
-                  <div key={`${day.toISOString()}-${slot.hour}-${slot.minute}`} className="bg-white min-h-[30px] p-1">
-                    {events.map((event: any) => (
-                      <div
-                        key={event.id}
-                        className={`text-xs p-1 rounded mb-0.5 ${
-                          event.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                          event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          event.status === 'no_show' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {event.patient?.first_name} {event.type}
-                      </div>
-                    ))}
+                                     <div 
+                     key={`${day.toISOString()}-${slot.hour}-${slot.minute}`} 
+                     className={`bg-white min-h-[30px] p-1 transition-colors ${
+                                               hasEvents 
+                          ? 'cursor-not-allowed opacity-75' 
+                          : (() => {
+                              const today = new Date()
+                              today.setHours(0, 0, 0, 0)
+                              const selectedDay = new Date(day)
+                              selectedDay.setHours(0, 0, 0, 0)
+                              const now = new Date()
+                              
+                                                             // Past date or past time slot today (with 15-minute buffer)
+                               const currentHour = now.getHours()
+                               const currentMinute = now.getMinutes()
+                               
+                               return selectedDay < today || 
+                                      (selectedDay.getTime() === today.getTime() && 
+                                       (slot.hour < currentHour || 
+                                        (slot.hour === currentHour && slot.minute <= currentMinute)))
+                            })()
+                          ? 'cursor-not-allowed opacity-50 text-gray-400'
+                          : 'cursor-pointer hover:bg-blue-50'
+                     }`}
+                     onClick={() => {
+                       const selectedDateTime = new Date(day)
+                       selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
+                       const now = new Date()
+                       
+                       if (!hasEvents && selectedDateTime >= now) {
+                         setSelectedDate(selectedDateTime)
+                         setShowSchedulingModal(true)
+                       }
+                     }}
+                   >
+                                         {events.map((event: any) => (
+                       <div
+                         key={event.id}
+                         className={`text-xs p-1 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity ${
+                           event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                           event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
+                           event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
+                           'bg-gray-100 text-gray-800 border border-gray-300'
+                         }`}
+                         title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
+                         onClick={(e) => {
+                           e.stopPropagation()
+                           setSelectedEvent(event)
+                           setShowSchedulingModal(true)
+                         }}
+                       >
+                         <div className="space-y-0.5">
+                           <div className="flex items-center justify-between">
+                             <span className="font-medium">{event.patient?.first_name} {event.type}</span>
+                             <span className="text-xs opacity-75">✏️</span>
+                           </div>
+                           <div className="flex items-center justify-between text-xs">
+                             <span className={`px-1 rounded text-xs ${
+                               event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
+                               event.status === 'completed' ? 'bg-green-200 text-green-700' :
+                               event.status === 'no_show' ? 'bg-red-200 text-red-700' :
+                               'bg-gray-200 text-gray-700'
+                             }`}>
+                               {event.status}
+                             </span>
+                             {event.patient?.phone && (
+                               <span className="text-gray-600">{event.patient.phone}</span>
+                             )}
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                     {!hasEvents && (
+                       <div className="text-xs text-gray-400 text-center py-1">
+                         Click to schedule
+                       </div>
+                     )}
                   </div>
                 )
               })}
@@ -208,37 +272,97 @@ const CalendarPage: React.FC = () => {
               <div className="w-24 p-2 text-sm text-gray-500 text-right border-r border-gray-200">
                 {slot.displayTime}
               </div>
-              <div className="flex-1 p-2 min-h-[40px]">
-                {slotEvents.map((event: any) => (
-                  <div
-                    key={event.id}
-                    className={`p-2 rounded-lg mb-1 ${
-                      event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
-                      event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
-                      event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
-                      'bg-gray-50 border-l-4 border-gray-500'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900 text-sm">
-                          {event.patient?.first_name} {event.patient?.last_name}
-                        </h4>
-                        <p className="text-xs text-gray-600 capitalize">{event.type}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(event.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                          {new Date(new Date(event.scheduled_at).getTime() + event.duration_minutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </p>
-                        {event.location && (
-                          <p className="text-xs text-gray-500 flex items-center mt-1">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {event.location}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                             <div 
+                 className={`flex-1 p-2 min-h-[40px] transition-colors ${
+                                       slotEvents.length > 0 
+                      ? 'cursor-not-allowed opacity-75' 
+                      : (() => {
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          const selectedDay = new Date(currentDate)
+                          selectedDay.setHours(0, 0, 0, 0)
+                          const now = new Date()
+                          
+                          // Past date or past time slot today (with 15-minute buffer)
+                          const currentHour = now.getHours()
+                          const currentMinute = now.getMinutes()
+                          
+                          return selectedDay < today || 
+                                 (selectedDay.getTime() === today.getTime() && 
+                                  (slot.hour < currentHour || 
+                                   (slot.hour === currentHour && slot.minute <= currentMinute)))
+                        })()
+                      ? 'cursor-not-allowed opacity-50 text-gray-400'
+                      : 'cursor-pointer hover:bg-blue-50'
+                 }`}
+                 onClick={() => {
+                   const selectedDateTime = new Date(currentDate)
+                   selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
+                   const now = new Date()
+                   
+                   if (slotEvents.length === 0 && selectedDateTime >= now) {
+                     setSelectedDate(selectedDateTime)
+                     setShowSchedulingModal(true)
+                   }
+                 }}
+               >
+                                 {slotEvents.map((event: any) => (
+                   <div
+                     key={event.id}
+                     className={`p-2 rounded-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity ${
+                       event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
+                       event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
+                       event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
+                       'bg-gray-50 border-l-4 border-gray-500'
+                     }`}
+                     title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
+                     onClick={(e) => {
+                       e.stopPropagation()
+                       setSelectedEvent(event)
+                       setShowSchedulingModal(true)
+                     }}
+                   >
+                                         <div className="flex items-center justify-between">
+                       <div className="flex-1">
+                         <div className="flex items-center justify-between mb-1">
+                           <h4 className="font-medium text-gray-900 text-sm">
+                             {event.patient?.first_name} {event.patient?.last_name}
+                           </h4>
+                           <span className="text-xs opacity-75">✏️</span>
+                         </div>
+                         <p className="text-xs text-gray-600 capitalize">{event.type}</p>
+                         <p className="text-xs text-gray-500">
+                           {new Date(event.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                           {new Date(new Date(event.scheduled_at).getTime() + event.duration_minutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                         </p>
+                         <div className="flex items-center justify-between mt-1">
+                           <span className={`px-2 py-0.5 rounded text-xs ${
+                             event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
+                             event.status === 'completed' ? 'bg-green-200 text-green-700' :
+                             event.status === 'no_show' ? 'bg-red-200 text-red-700' :
+                             'bg-gray-200 text-gray-700'
+                           }`}>
+                             {event.status}
+                           </span>
+                           {event.patient?.phone && (
+                             <span className="text-xs text-gray-600">{event.patient.phone}</span>
+                           )}
+                         </div>
+                         {event.location && (
+                           <p className="text-xs text-gray-500 flex items-center mt-1">
+                             <MapPin className="h-3 w-3 mr-1" />
+                             {event.location}
+                           </p>
+                         )}
+                       </div>
+                     </div>
                   </div>
                 ))}
+                {slotEvents.length === 0 && (
+                  <div className="text-xs text-gray-400 text-center py-2">
+                    Click to schedule appointment
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -255,7 +379,7 @@ const CalendarPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
           <p className="text-gray-600">Manage and schedule appointments</p>
         </div>
-        <Button onClick={() => setShowAdvancedModal(true)}>
+        <Button onClick={() => setShowSchedulingModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Schedule Appointment
         </Button>
@@ -265,13 +389,13 @@ const CalendarPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button variant="outline" onClick={goToPrevious}>
+            <Button onClick={goToPrevious}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={goToToday}>
+            <Button onClick={goToToday}>
               Today
             </Button>
-            <Button variant="outline" onClick={goToNext}>
+            <Button onClick={goToNext}>
               <ChevronRight className="h-4 w-4" />
             </Button>
             
@@ -285,23 +409,23 @@ const CalendarPage: React.FC = () => {
           {/* View Toggle */}
           <div className="flex items-center space-x-2">
             <Button
-              variant={viewType === 'month' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewType('month')}
+              className={viewType === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}
             >
               Month
             </Button>
             <Button
-              variant={viewType === 'week' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewType('week')}
+              className={viewType === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}
             >
               Week
             </Button>
             <Button
-              variant={viewType === 'day' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewType('day')}
+              className={viewType === 'day' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}
             >
               Day
             </Button>
@@ -327,42 +451,83 @@ const CalendarPage: React.FC = () => {
               const events = getEventsForDate(day)
               
               return (
-                <div
-                  key={index}
-                  className={`min-h-[120px] bg-white p-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    !isCurrentMonth ? 'text-gray-400' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedDate(day)
-                    setShowAdvancedModal(true)
-                  }}
-                >
-                  <div className={`text-sm font-medium mb-1 ${
-                    isToday ? 'bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''
-                  }`}>
-                    {day.getDate()}
-                  </div>
+                                 <div
+                   key={index}
+                                       className={`min-h-[120px] bg-white p-2 transition-colors ${
+                      !isCurrentMonth ? 'text-gray-400' : 
+                      (() => {
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        const selectedDay = new Date(day)
+                        selectedDay.setHours(0, 0, 0, 0)
+                        return selectedDay < today ? 'text-gray-400 cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'
+                      })()
+                    }`}
+                                       onClick={() => {
+                      // Allow today and future dates
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      const selectedDay = new Date(day)
+                      selectedDay.setHours(0, 0, 0, 0)
+                      
+                      if (selectedDay >= today) {
+                        setSelectedDate(day)
+                        setShowSchedulingModal(true)
+                      }
+                    }}
+                 >
+                                     <div className={`text-sm font-medium mb-1 ${
+                     isToday ? 'bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''
+                   }`}>
+                                           {day.getDate()}
+                      {(() => {
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        const selectedDay = new Date(day)
+                        selectedDay.setHours(0, 0, 0, 0)
+                        return selectedDay < today ? (
+                          <div className="text-xs text-gray-400 mt-1">Past</div>
+                        ) : null
+                      })()}
+                   </div>
                   
                   {/* Events */}
                   <div className="space-y-1">
-                    {events.slice(0, 3).map((event: any) => (
-                      <div
-                        key={event.id}
-                        className={`text-xs p-1 rounded truncate cursor-pointer ${
-                          event.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                          event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          event.status === 'no_show' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedEvent(event)
-                          setShowAdvancedModal(true)
-                        }}
-                      >
-                        {event.patient?.first_name} {event.type}
-                      </div>
-                    ))}
+                                         {events.slice(0, 3).map((event: any) => (
+                       <div
+                         key={event.id}
+                         className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                           event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                           event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
+                           event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
+                           'bg-gray-100 text-gray-800 border border-gray-300'
+                         }`}
+                         title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
+                         onClick={(e) => {
+                           e.stopPropagation()
+                           setSelectedEvent(event)
+                           setShowSchedulingModal(true)
+                         }}
+                       >
+                         <div className="flex items-center justify-between">
+                           <span className="font-medium">{event.patient?.first_name} {event.type}</span>
+                           <span className="text-xs opacity-75">✏️</span>
+                         </div>
+                         <div className="flex items-center justify-between text-xs mt-0.5">
+                           <span className={`px-1 rounded text-xs ${
+                             event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
+                             event.status === 'completed' ? 'bg-green-200 text-green-700' :
+                             event.status === 'no_show' ? 'bg-red-200 text-red-700' :
+                             'bg-gray-200 text-gray-700'
+                           }`}>
+                             {event.status}
+                           </span>
+                           {event.patient?.phone && (
+                             <span className="text-gray-600">{event.patient.phone}</span>
+                           )}
+                         </div>
+                       </div>
+                     ))}
                     {events.length > 3 && (
                       <div className="text-xs text-gray-500">
                         +{events.length - 3} more
@@ -402,18 +567,18 @@ const CalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Advanced Schedule Modal */}
-      <AdvancedScheduleModal
-        isOpen={showAdvancedModal}
+      {/* Appointment Scheduling Modal */}
+      <AppointmentSchedulingModal
+        isOpen={showSchedulingModal}
         onClose={() => {
-          setShowAdvancedModal(false)
+          setShowSchedulingModal(false)
           setSelectedDate(null)
           setSelectedEvent(null)
         }}
         selectedDate={selectedDate || undefined}
         selectedEvent={selectedEvent}
         onSuccess={() => {
-          dispatch(fetchAppointments())
+          dispatch(fetchAppointments({}))
         }}
       />
     </div>

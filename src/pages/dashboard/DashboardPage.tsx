@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { AppDispatch, RootState } from '../../store'
 import { fetchPatients } from '../../features/patients/patientSlice'
 import { fetchStatistics } from '../../features/crm/crmThunks'
+import QuickAppointmentModal from '../../components/appointments/QuickAppointmentModal'
 import { 
   Users, 
   Calendar, 
@@ -24,6 +25,7 @@ const DashboardPage: React.FC = () => {
   
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showQuickAppointmentModal, setShowQuickAppointmentModal] = useState(false)
 
   // Update time every second
   useEffect(() => {
@@ -187,7 +189,7 @@ const DashboardPage: React.FC = () => {
       description: 'Book a new appointment',
       icon: Calendar,
       color: 'bg-green-500 hover:bg-green-600',
-      href: '/appointments'
+      action: () => setShowQuickAppointmentModal(true)
     },
     {
       name: 'Create Lead',
@@ -301,12 +303,12 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => window.location.href = action.href}
-                  className="w-full flex items-center p-3 text-left rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 hover:shadow-sm"
-                >
+                             {quickActions.map((action, index) => (
+                 <button
+                   key={index}
+                   onClick={action.action || (() => window.location.href = action.href || '/')}
+                   className="w-full flex items-center p-3 text-left rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 hover:shadow-sm"
+                 >
                   <div className={`p-2 ${action.color} bg-opacity-10 rounded-lg mr-3`}>
                     <action.icon className={`h-5 w-5 ${action.color.replace('bg-', 'text-').replace(' hover:bg-', '')}`} />
                   </div>
@@ -390,10 +392,20 @@ const DashboardPage: React.FC = () => {
               View Calendar
             </button>
           </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+                 </div>
+       </div>
+
+       {/* Quick Appointment Modal */}
+       <QuickAppointmentModal
+         isOpen={showQuickAppointmentModal}
+         onClose={() => setShowQuickAppointmentModal(false)}
+         onSuccess={() => {
+           // Refresh dashboard data after appointment creation
+           loadDashboardData()
+         }}
+       />
+     </div>
+   )
+ }
 
 export default DashboardPage 
