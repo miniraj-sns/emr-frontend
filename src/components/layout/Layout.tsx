@@ -3,14 +3,21 @@ import { useSelector } from 'react-redux'
 import { RootState } from '../../store'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import TopBarLayout from './TopBarLayout'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { sidebar } = useSelector((state: RootState) => state.ui)
+  const { sidebar, layout } = useSelector((state: RootState) => state.ui)
 
+  // If topbar layout is selected, use TopBarLayout
+  if (layout.type === 'topbar') {
+    return <TopBarLayout>{children}</TopBarLayout>
+  }
+
+  // Default sidebar layout
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header - Full width at top */}
@@ -34,7 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="flex-1 flex flex-col" style={{ height: 'calc(100vh - 65px)' }}>
           {/* Page content - Full height with vertical scroll */}
           <main className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6 lg:p-8 w-full">
+            <div className="p-4 sm:p-6 lg:p-4 w-full">
               {children}
             </div>
           </main>

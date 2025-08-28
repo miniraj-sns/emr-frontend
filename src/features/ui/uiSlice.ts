@@ -8,9 +8,12 @@ export interface Notification {
   duration?: number
 }
 
-export interface UIState {
+interface UIState {
   sidebar: {
     isOpen: boolean
+  }
+  layout: {
+    type: 'sidebar' | 'topbar' // sidebar = current layout, topbar = only top navigation
   }
   modals: {
     [key: string]: boolean
@@ -22,6 +25,9 @@ export interface UIState {
 const initialState: UIState = {
   sidebar: {
     isOpen: true, // Start with sidebar open
+  },
+  layout: {
+    type: 'sidebar'
   },
   modals: {},
   notifications: [],
@@ -55,6 +61,9 @@ const uiSlice = createSlice({
     setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
       state.theme = action.payload
     },
+    setLayoutType: (state, action: PayloadAction<'sidebar' | 'topbar'>) => {
+      state.layout.type = action.payload
+    }
   },
 })
 
@@ -66,6 +75,7 @@ export const {
   addNotification,
   removeNotification,
   setTheme,
+  setLayoutType,
 } = uiSlice.actions
 
 export default uiSlice.reducer 

@@ -300,50 +300,53 @@ const PatientDetailPage: React.FC = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link to="/patients" className="text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {currentPatient.first_name} {currentPatient.last_name}
-            </h1>
-            <p className="text-gray-600">Patient ID: {currentPatient.id}</p>
+      <div className="space-y-1">
+        {/* First Row - Patient Name and Action Buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Link to="/patients" className="text-gray-500 hover:text-gray-700">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                {currentPatient.first_name} {currentPatient.last_name}
+                <span className="text-sm text-gray-600 ms-4">Patient ID: {currentPatient.id}</span>
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-1">
+            <Link to={`/patients/${currentPatient.id}/edit`}>
+              <Button variant="outline" size="sm" className="h-6">
+                <Edit className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </Link>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="h-6 text-red-600 border-red-300 hover:bg-red-50"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <Link to={`/patients/${currentPatient.id}/edit`}>
-            <Button variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
-          <Button 
-            variant="outline" 
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="text-red-600 border-red-300 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6">
+        
+        {/* Second Row - Tabs */}
+        <div className="bg-white rounded-lg shadow">
+          <nav className="flex space-x-3 px-3 py-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                  className={`py-1 px-1 border-b-2 font-medium text-sm flex items-center space-x-1 ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -356,213 +359,213 @@ const PatientDetailPage: React.FC = () => {
             })}
           </nav>
         </div>
-        <div className="p-6">
+      </div>
+
+      {/* Content Area */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-1">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Basic Information
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">Full Name</label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {currentPatient.first_name} {currentPatient.last_name}
-                    </p>
-                  </div>
-                  {currentPatient.date_of_birth && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Date of Birth</label>
-                      <p className="mt-1 text-sm text-gray-900 flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(currentPatient.date_of_birth).toLocaleDateString()}
-                      </p>
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-1">
+              {/* Column 1 - Patient Info and Assigned Staff (30%) */}
+              <div className="space-y-1 lg:col-span-3 bg-blue-50 rounded-lg p-1">
+                {/* Basic Information and Contact - Combined */}
+                <div className="bg-white rounded-lg p-2">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    Patient Information
+                  </h2>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">Full Name</span>
+                      <span className="text-sm text-gray-900">{currentPatient.first_name} {currentPatient.last_name}</span>
                     </div>
-                  )}
-                  {currentPatient.gender && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500">Gender</label>
-                      <p className="mt-1 text-sm text-gray-900 capitalize">{currentPatient.gender}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">Status</label>
-                    <div className="mt-1">{getStatusBadge(currentPatient.patient_status)}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">Type</label>
-                    <div className="mt-1">{getTypeBadge(currentPatient.patient_type)}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">Created</label>
-                    <p className="mt-1 text-sm text-gray-900 flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {new Date(currentPatient.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Vital Signs */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Heart className="h-5 w-5 mr-2" />
-                  Vital Signs
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Ruler className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{latestVitals?.height}</p>
-                    <p className="text-xs text-gray-500">Height</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Weight className="h-5 w-5 text-green-500" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{latestVitals?.weight}</p>
-                    <p className="text-xs text-gray-500">Weight</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Activity className="h-5 w-5 text-red-500" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {latestVitals?.blood_pressure_systolic && latestVitals?.blood_pressure_diastolic 
-                        ? `${latestVitals.blood_pressure_systolic}/${latestVitals.blood_pressure_diastolic}`
-                        : 'N/A'
-                      }
-                    </p>
-                    <p className="text-xs text-gray-500">BP</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Thermometer className="h-5 w-5 text-orange-500" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{latestVitals?.temperature}</p>
-                    <p className="text-xs text-gray-500">Temp</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Heart className="h-5 w-5 text-pink-500" />
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">{latestVitals?.heart_rate}</p>
-                    <p className="text-xs text-gray-500">HR</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500">Last Updated</p>
-                    <p className="text-sm font-medium text-gray-900">{new Date(latestVitals?.updated_at || currentPatient.updated_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Phone className="h-5 w-5 mr-2" />
-                  Contact Information
-                </h2>
-                <div className="space-y-4">
-                  {currentPatient.email && (
-                    <div className="flex items-center">
-                      <Mail className="h-5 w-5 text-gray-400 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Email</p>
-                        <p className="text-sm text-gray-600">{currentPatient.email}</p>
+                    {currentPatient.date_of_birth && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Date of Birth</span>
+                        <span className="text-sm text-gray-900 flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {new Date(currentPatient.date_of_birth).toLocaleDateString()}
+                        </span>
                       </div>
-                    </div>
-                  )}
-                  {currentPatient.phone && (
-                    <div className="flex items-center">
-                      <Phone className="h-5 w-5 text-gray-400 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Phone</p>
-                        <p className="text-sm text-gray-600">{currentPatient.phone}</p>
+                    )}
+                    {currentPatient.gender && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Gender</span>
+                        <span className="text-sm text-gray-900 capitalize">{currentPatient.gender}</span>
                       </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">Status</span>
+                      <div>{getStatusBadge(currentPatient.patient_status)}</div>
                     </div>
-                  )}
-                  {(currentPatient.address_line1 || currentPatient.city || currentPatient.state) && (
-                    <div className="flex items-start">
-                      <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Address</p>
-                        <p className="text-sm text-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">Type</span>
+                      <div>{getTypeBadge(currentPatient.patient_type)}</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500">Created</span>
+                      <span className="text-sm text-gray-900 flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {new Date(currentPatient.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {currentPatient.email && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Email</span>
+                        <span className="text-sm text-gray-900">{currentPatient.email}</span>
+                      </div>
+                    )}
+                    {currentPatient.phone && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-500">Phone</span>
+                        <span className="text-sm text-gray-900">{currentPatient.phone}</span>
+                      </div>
+                    )}
+                    {(currentPatient.address_line1 || currentPatient.city || currentPatient.state) && (
+                      <div className="flex items-start justify-between">
+                        <span className="text-sm font-medium text-gray-500">Address</span>
+                        <span className="text-sm text-gray-900 text-right">
                           {currentPatient.address_line1 && <span>{currentPatient.address_line1}<br /></span>}
                           {currentPatient.address_line2 && <span>{currentPatient.address_line2}<br /></span>}
                           {currentPatient.city && currentPatient.state && (
                             <span>{currentPatient.city}, {currentPatient.state}</span>
                           )}
                           {currentPatient.postal_code && <span> {currentPatient.postal_code}</span>}
-                          {currentPatient.country && <span><br />{currentPatient.country}</span>}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Current Medications */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Pill className="h-5 w-5 mr-2" />
-                    Current Medications
-                  </h3>
-                  <div className="space-y-2">
-                    {activeMedications.slice(0, 3).map((medication, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{medication.medication_name}</p>
-                          <p className="text-xs text-gray-600">{medication.dosage} • {medication.frequency}</p>
-                        </div>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Active
+                          {currentPatient.country && <span> {currentPatient.country}</span>}
                         </span>
                       </div>
-                    ))}
-                    {activeMedications.length > 3 && (
-                      <p className="text-xs text-gray-500 text-center">+{activeMedications.length - 3} more</p>
                     )}
                   </div>
                 </div>
 
-                {/* Allergies */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
-                    Allergies
-                  </h3>
-                  <div className="space-y-2">
-                    {currentPatient.allergies?.map((allergy, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{allergy.allergen}</p>
-                          <p className="text-xs text-gray-600">{allergy.reaction}</p>
+                {/* Assigned Staff */}
+                <div className="bg-white rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="text-md font-semibold text-gray-900 flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      Assigned Staff
+                    </h2>
+                    <Button size="sm" variant="outline" className="h-5 px-1">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Assign
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    {currentPatient.referring_provider && (
+                      <div className="flex items-center p-1 border border-gray-200 rounded text-sm">
+                        <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                          <User className="h-3 w-3 text-blue-600" />
                         </div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          allergy.severity === 'Severe' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {allergy.severity}
-                        </span>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">Referring Provider</p>
+                          <p className="text-xs text-gray-600">
+                            {currentPatient.referring_provider.first_name} {currentPatient.referring_provider.last_name}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" className="h-4 px-1">
+                          <MessageSquare className="h-3 w-3" />
+                        </Button>
                       </div>
-                    ))}
+                    )}
+                    {currentPatient.assigned_coach && (
+                      <div className="flex items-center p-1 border border-gray-200 rounded text-sm">
+                        <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-2">
+                          <User className="h-3 w-3 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">Assigned Coach</p>
+                          <p className="text-xs text-gray-600">
+                            {currentPatient.assigned_coach.first_name} {currentPatient.assigned_coach.last_name}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" className="h-4 px-1">
+                          <MessageSquare className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {!currentPatient.referring_provider && !currentPatient.assigned_coach && (
+                      <div className="text-center py-1">
+                        <Users className="h-5 w-5 text-gray-400 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500 mb-1">No staff assigned</p>
+                        <Button size="sm" variant="outline" className="h-4 px-1">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Assign Staff
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {currentPatient.notes && (
+                  <div className="bg-white rounded-lg p-2">
+                    <h2 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Notes
+                    </h2>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-3">{currentPatient.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Column 2 - Vitals and Appointments (30%) */}
+              <div className="space-y-1 lg:col-span-3 bg-orange-50 rounded-lg p-1">
+                {/* Vital Signs - Compact */}
+                <div className="bg-white rounded-lg p-2">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Heart className="h-5 w-5 mr-2" />
+                      Vital Signs
+                    </div>
+                    <span className="text-sm font-normal text-gray-500">
+                      ({new Date(latestVitals?.updated_at || currentPatient.updated_at).toLocaleDateString()})
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="text-center">
+                      <Ruler className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium text-gray-900">{latestVitals?.height || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">Height</p>
+                    </div>
+                    <div className="text-center">
+                      <Weight className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium text-gray-900">{latestVitals?.weight || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">Weight</p>
+                    </div>
+                    <div className="text-center">
+                      <Activity className="h-4 w-4 text-red-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium text-gray-900">
+                        {latestVitals?.blood_pressure_systolic && latestVitals?.blood_pressure_diastolic 
+                          ? `${latestVitals.blood_pressure_systolic}/${latestVitals.blood_pressure_diastolic}`
+                          : 'N/A'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500">BP</p>
+                    </div>
+                    <div className="text-center">
+                      <Thermometer className="h-4 w-4 text-orange-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium text-gray-900">{latestVitals?.temperature || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">Temp</p>
+                    </div>
+                    <div className="text-center">
+                      <Heart className="h-4 w-4 text-pink-500 mx-auto mb-1" />
+                      <p className="text-sm font-medium text-gray-900">{latestVitals?.heart_rate || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">HR</p>
+                    </div>
+                    
                   </div>
                 </div>
 
                 {/* Upcoming Appointments */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
+                <div className="bg-white rounded-lg p-2">
+                  <h3 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
                     Upcoming Appointments
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {currentPatient.appointments?.filter(apt => apt.status === 'scheduled').slice(0, 2).map((appointment, index) => (
-                      <div key={index} className="p-2 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm font-medium text-gray-900 capitalize">{appointment.type}</p>
+                      <div key={index} className="p-1 bg-blue-50 rounded border border-blue-200 text-sm">
+                        <p className="font-medium text-gray-900 capitalize">{appointment.type}</p>
                         <p className="text-xs text-gray-600">
                           {new Date(appointment.scheduled_at).toLocaleDateString()} at {new Date(appointment.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </p>
@@ -578,76 +581,56 @@ const PatientDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Notes */}
-              {currentPatient.notes && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Notes
-                  </h2>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{currentPatient.notes}</p>
+              {/* Column 3 - Medications and Allergies (40%) */}
+              <div className="space-y-1 lg:col-span-4 bg-purple-50 rounded-lg p-1">
+                {/* Current Medications */}
+                <div className="bg-white rounded-lg p-2">
+                  <h3 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+                    <Pill className="h-4 w-4 mr-2" />
+                    Current Medications
+                  </h3>
+                  <div className="space-y-1">
+                    {activeMedications.slice(0, 3).map((medication, index) => (
+                      <div key={index} className="flex items-center justify-between p-1 bg-gray-50 rounded text-sm">
+                        <div>
+                          <p className="font-medium text-gray-900">{medication.medication_name}</p>
+                          <p className="text-xs text-gray-600">{medication.dosage} • {medication.frequency}</p>
+                        </div>
+                        <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      </div>
+                    ))}
+                    {activeMedications.length > 3 && (
+                      <p className="text-xs text-gray-500 text-center">+{activeMedications.length - 3} more</p>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {/* Assigned Staff */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Assigned Staff
-                  </h2>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Assign Staff
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentPatient.referring_provider && (
-                    <div className="flex items-center p-4 border border-gray-200 rounded-lg">
-                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                        <User className="h-6 w-6 text-blue-600" />
+                {/* Allergies */}
+                <div className="bg-white rounded-lg p-2">
+                  <h3 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
+                    Allergies
+                  </h3>
+                  <div className="space-y-1">
+                    {currentPatient.allergies?.slice(0, 3).map((allergy, index) => (
+                      <div key={index} className="flex items-center justify-between p-1 bg-red-50 rounded border border-red-200 text-sm">
+                        <div>
+                          <p className="font-medium text-gray-900">{allergy.allergen}</p>
+                          <p className="text-xs text-gray-600">{allergy.reaction}</p>
+                        </div>
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
+                          allergy.severity === 'Severe' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {allergy.severity}
+                        </span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">Referring Provider</p>
-                        <p className="text-sm text-gray-600">
-                          {currentPatient.referring_provider.first_name} {currentPatient.referring_provider.last_name}
-                        </p>
-                        <p className="text-xs text-gray-500">{currentPatient.referring_provider.email}</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        Contact
-                      </Button>
-                    </div>
-                  )}
-                  {currentPatient.assigned_coach && (
-                    <div className="flex items-center p-4 border border-gray-200 rounded-lg">
-                      <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
-                        <User className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">Assigned Coach</p>
-                        <p className="text-sm text-gray-600">
-                          {currentPatient.assigned_coach.first_name} {currentPatient.assigned_coach.last_name}
-                        </p>
-                        <p className="text-xs text-gray-500">{currentPatient.assigned_coach.email}</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        Contact
-                      </Button>
-                    </div>
-                  )}
-                  {!currentPatient.referring_provider && !currentPatient.assigned_coach && (
-                    <div className="col-span-2 text-center py-8">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">No staff assigned</p>
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Assign Staff Member
-                      </Button>
-                    </div>
-                  )}
+                    ))}
+                    {currentPatient.allergies?.length > 3 && (
+                      <p className="text-xs text-gray-500 text-center">+{currentPatient.allergies.length - 3} more</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

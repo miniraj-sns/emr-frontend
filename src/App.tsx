@@ -9,6 +9,7 @@ import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import PatientsPage from './pages/patients/PatientsPage'
 import PatientDetailPage from './pages/patients/PatientDetailPage'
+import PatientFormsPage from './pages/patients/PatientFormsPage'
 import AppointmentsPage from './pages/appointments/AppointmentsPage'
 import CalendarPage from './pages/appointments/CalendarPage'
 import CRMPage from './pages/crm/CRMPage'
@@ -89,6 +90,17 @@ const App: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900">Edit Patient</h1>
                         <p className="text-gray-600 mt-2">Patient edit form coming soon...</p>
                       </div>
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/patients/forms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <PatientFormsPage />
                     </Layout>
                   </ProtectedRoute>
                 }
