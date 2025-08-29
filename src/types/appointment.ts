@@ -39,7 +39,7 @@ export interface AppointmentListResponse {
     last_page: number
     per_page: number
     total: number
-  }
+  } | null
 }
 
 export interface AppointmentFilters {
@@ -52,7 +52,7 @@ export interface AppointmentFilters {
   date_to?: string
   search?: string
   page?: number
-  per_page?: number
+  per_page?: number | string
 }
 
 export interface CreateAppointmentRequest {

@@ -211,7 +211,12 @@ const appointmentsSlice = createSlice({
       .addCase(fetchAppointments.fulfilled, (state, action: PayloadAction<AppointmentListResponse>) => {
         state.loading.list = false
         state.appointments = action.payload.appointments
-        state.pagination = action.payload.pagination
+        state.pagination = action.payload.pagination || {
+          current_page: 1,
+          last_page: 1,
+          per_page: action.payload.appointments.length,
+          total: action.payload.appointments.length,
+        }
       })
       .addCase(fetchAppointments.rejected, (state, action) => {
         state.loading.list = false
@@ -242,7 +247,9 @@ const appointmentsSlice = createSlice({
       .addCase(createAppointment.fulfilled, (state, action: PayloadAction<Appointment>) => {
         state.loading.create = false
         state.appointments.unshift(action.payload)
-        state.pagination.total += 1
+        if (state.pagination) {
+          state.pagination.total += 1
+        }
       })
       .addCase(createAppointment.rejected, (state, action) => {
         state.loading.create = false
@@ -279,7 +286,9 @@ const appointmentsSlice = createSlice({
       .addCase(deleteAppointment.fulfilled, (state, action: PayloadAction<number>) => {
         state.loading.delete = false
         state.appointments = state.appointments.filter(apt => apt.id !== action.payload)
-        state.pagination.total -= 1
+        if (state.pagination) {
+          state.pagination.total -= 1
+        }
         if (state.currentAppointment?.id === action.payload) {
           state.currentAppointment = null
         }

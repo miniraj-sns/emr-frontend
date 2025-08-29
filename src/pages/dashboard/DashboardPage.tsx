@@ -85,32 +85,32 @@ const DashboardPage: React.FC = () => {
     const valueTrend = totalValue > 0 ? '+15%' : '0%'
 
     return [
-      {
-        name: 'Total Patients',
+    {
+      name: 'Total Patients',
         value: totalPatients > 0 ? totalPatients.toLocaleString() : '0',
         change: patientTrend,
-        changeType: 'positive',
-        icon: Users,
+      changeType: 'positive',
+      icon: Users,
         color: 'bg-blue-500',
         trend: 'up',
         loading: patientsLoading.list
-      },
-      {
-        name: 'Appointments Today',
+    },
+    {
+      name: 'Appointments Today',
         value: '0', // TODO: Connect to appointments API when available
         change: '0%',
         changeType: 'neutral',
-        icon: Calendar,
+      icon: Calendar,
         color: 'bg-green-500',
         trend: 'neutral',
         loading: false
-      },
-      {
-        name: 'Active Leads',
+    },
+    {
+      name: 'Active Leads',
         value: totalLeads.toString(),
         change: leadTrend,
-        changeType: 'positive',
-        icon: Building2,
+      changeType: 'positive',
+      icon: Building2,
         color: 'bg-purple-500',
         trend: 'up',
         loading: statsLoading
@@ -120,7 +120,7 @@ const DashboardPage: React.FC = () => {
         value: `$${totalValue.toLocaleString()}`,
         change: valueTrend,
         changeType: 'positive',
-        icon: Package,
+      icon: Package,
         color: 'bg-orange-500',
         trend: 'up',
         loading: statsLoading
@@ -246,7 +246,7 @@ const DashboardPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
               <Activity className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>Last updated: {currentTime.toLocaleTimeString()}</span>
             </div>
@@ -311,21 +311,21 @@ const DashboardPage: React.FC = () => {
                  >
                   <div className={`p-2 ${action.color} bg-opacity-10 rounded-lg mr-3`}>
                     <action.icon className={`h-5 w-5 ${action.color.replace('bg-', 'text-').replace(' hover:bg-', '')}`} />
-                  </div>
+        </div>
                   <div>
                     <p className="font-medium text-gray-900">{action.name}</p>
                     <p className="text-sm text-gray-600">{action.description}</p>
                   </div>
                   <Plus className="h-4 w-4 text-gray-400 ml-auto" />
                 </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
+      </div>
 
         {/* Recent Activities */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
               <button className="text-sm text-blue-600 hover:text-blue-800">View All</button>
@@ -353,13 +353,13 @@ const DashboardPage: React.FC = () => {
                         {activity.time}
                       </p>
                     </div>
-                  </div>
+              </div>
                 ))
               )}
-            </div>
+              </div>
+              </div>
           </div>
         </div>
-      </div>
 
       {/* System Status & Today's Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -372,11 +372,11 @@ const DashboardPage: React.FC = () => {
                 <div className="flex items-center">
                   <item.icon className="h-4 w-4 text-gray-400 mr-2" />
                   <span className="text-sm text-gray-600">{item.name}</span>
-                </div>
+            </div>
                 <span className={`text-sm font-medium ${item.color}`}>
                   {item.status}
-                </span>
-              </div>
+              </span>
+            </div>
             ))}
           </div>
         </div>
@@ -392,8 +392,8 @@ const DashboardPage: React.FC = () => {
               View Calendar
             </button>
           </div>
-                 </div>
-       </div>
+        </div>
+      </div>
 
        {/* Quick Appointment Modal */}
        <QuickAppointmentModal
@@ -404,8 +404,8 @@ const DashboardPage: React.FC = () => {
            loadDashboardData()
          }}
        />
-     </div>
-   )
- }
+    </div>
+  )
+}
 
 export default DashboardPage 

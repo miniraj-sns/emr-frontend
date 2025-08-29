@@ -303,3 +303,6 @@ const NewPatientPage: React.FC = () => {
 }
 
 export default NewPatientPage
+
+
+

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   User, 
   Calendar, 
@@ -13,16 +13,249 @@ import {
   Ruler,
   Weight,
   Activity,
-  Thermometer
+  Thermometer,
+  Edit,
+  Trash2,
+  Loader2
 } from 'lucide-react'
 import Button from '../ui/Button'
 import { Patient } from '../../types/patient'
+import patientMasterDataService, { 
+  PatientAllergy, 
+  PatientMedicalProblem, 
+  PatientMedication,
+  CreatePatientAllergyRequest,
+  CreatePatientMedicalProblemRequest,
+  CreatePatientMedicationRequest,
+  UpdatePatientAllergyRequest,
+  UpdatePatientMedicalProblemRequest,
+  UpdatePatientMedicationRequest
+} from '../../services/patientMasterDataService'
+import AllergyModal from './AllergyModal'
+import MedicalProblemModal from './MedicalProblemModal'
+import MedicationModal from './MedicationModal'
 
 interface PatientOverviewProps {
   patient: Patient
 }
 
 const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
+  // Patient data states
+  const [patientAllergies, setPatientAllergies] = useState<PatientAllergy[]>([])
+  const [patientMedicalProblems, setPatientMedicalProblems] = useState<PatientMedicalProblem[]>([])
+  const [patientMedications, setPatientMedications] = useState<PatientMedication[]>([])
+  
+  // Loading and error states
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Modal states
+  const [allergyModal, setAllergyModal] = useState({
+    isOpen: false,
+    mode: 'add' as 'add' | 'edit',
+    allergy: null as PatientAllergy | null
+  })
+
+  const [medicalProblemModal, setMedicalProblemModal] = useState({
+    isOpen: false,
+    mode: 'add' as 'add' | 'edit',
+    medicalProblem: null as PatientMedicalProblem | null
+  })
+
+  const [medicationModal, setMedicationModal] = useState({
+    isOpen: false,
+    mode: 'add' as 'add' | 'edit',
+    medication: null as PatientMedication | null
+  })
+
+  // Load patient data when patient changes
+  useEffect(() => {
+    if (patient.id) {
+      loadPatientData()
+    }
+  }, [patient.id])
+
+  const loadPatientData = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const [allergiesRes, medicalProblemsRes, medicationsRes] = await Promise.all([
+        patientMasterDataService.getPatientAllergies(patient.id),
+        patientMasterDataService.getPatientMedicalProblems(patient.id),
+        patientMasterDataService.getPatientMedications(patient.id)
+      ])
+
+      setPatientAllergies(allergiesRes.data || [])
+      setPatientMedicalProblems(medicalProblemsRes.data || [])
+      setPatientMedications(medicationsRes.data || [])
+    } catch (err) {
+      console.error('Error loading patient data:', err)
+      setError('Failed to load patient data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Allergy handlers
+  const handleAddAllergy = () => {
+    setAllergyModal({
+      isOpen: true,
+      mode: 'add',
+      allergy: null
+    })
+  }
+
+  const handleEditAllergy = (allergy: PatientAllergy) => {
+    setAllergyModal({
+      isOpen: true,
+      mode: 'edit',
+      allergy
+    })
+  }
+
+  const handleSaveAllergy = async (data: CreatePatientAllergyRequest | UpdatePatientAllergyRequest) => {
+    try {
+      if (allergyModal.mode === 'add') {
+        await patientMasterDataService.createPatientAllergy(patient.id, data as CreatePatientAllergyRequest)
+      } else {
+        await patientMasterDataService.updatePatientAllergy(patient.id, allergyModal.allergy!.id, data as UpdatePatientAllergyRequest)
+      }
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error saving allergy:', err)
+      throw err
+    }
+  }
+
+  const handleDeleteAllergy = async (allergyId: number) => {
+    if (!confirm('Are you sure you want to delete this allergy?')) return
+    
+    try {
+      await patientMasterDataService.deletePatientAllergy(patient.id, allergyId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error deleting allergy:', err)
+      setError('Failed to delete allergy')
+    }
+  }
+
+  const handleToggleAllergyStatus = async (allergyId: number) => {
+    try {
+      await patientMasterDataService.togglePatientAllergyStatus(patient.id, allergyId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error toggling allergy status:', err)
+      setError('Failed to update allergy status')
+    }
+  }
+
+  // Medical Problem handlers
+  const handleAddMedicalProblem = () => {
+    setMedicalProblemModal({
+      isOpen: true,
+      mode: 'add',
+      medicalProblem: null
+    })
+  }
+
+  const handleEditMedicalProblem = (medicalProblem: PatientMedicalProblem) => {
+    setMedicalProblemModal({
+      isOpen: true,
+      mode: 'edit',
+      medicalProblem
+    })
+  }
+
+  const handleSaveMedicalProblem = async (data: CreatePatientMedicalProblemRequest | UpdatePatientMedicalProblemRequest) => {
+    try {
+      if (medicalProblemModal.mode === 'add') {
+        await patientMasterDataService.createPatientMedicalProblem(patient.id, data as CreatePatientMedicalProblemRequest)
+      } else {
+        await patientMasterDataService.updatePatientMedicalProblem(patient.id, medicalProblemModal.medicalProblem!.id, data as UpdatePatientMedicalProblemRequest)
+      }
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error saving medical problem:', err)
+      throw err
+    }
+  }
+
+  const handleDeleteMedicalProblem = async (problemId: number) => {
+    if (!confirm('Are you sure you want to delete this medical problem?')) return
+    
+    try {
+      await patientMasterDataService.deletePatientMedicalProblem(patient.id, problemId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error deleting medical problem:', err)
+      setError('Failed to delete medical problem')
+    }
+  }
+
+  const handleToggleMedicalProblemStatus = async (problemId: number) => {
+    try {
+      await patientMasterDataService.togglePatientMedicalProblemStatus(patient.id, problemId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error toggling medical problem status:', err)
+      setError('Failed to update medical problem status')
+    }
+  }
+
+  // Medication handlers
+  const handleAddMedication = () => {
+    setMedicationModal({
+      isOpen: true,
+      mode: 'add',
+      medication: null
+    })
+  }
+
+  const handleEditMedication = (medication: PatientMedication) => {
+    setMedicationModal({
+      isOpen: true,
+      mode: 'edit',
+      medication
+    })
+  }
+
+  const handleSaveMedication = async (data: CreatePatientMedicationRequest | UpdatePatientMedicationRequest) => {
+    try {
+      if (medicationModal.mode === 'add') {
+        await patientMasterDataService.createPatientMedication(patient.id, data as CreatePatientMedicationRequest)
+      } else {
+        await patientMasterDataService.updatePatientMedication(patient.id, medicationModal.medication!.id, data as UpdatePatientMedicationRequest)
+      }
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error saving medication:', err)
+      throw err
+    }
+  }
+
+  const handleDeleteMedication = async (medicationId: number) => {
+    if (!confirm('Are you sure you want to delete this medication?')) return
+    
+    try {
+      await patientMasterDataService.deletePatientMedication(patient.id, medicationId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error deleting medication:', err)
+      setError('Failed to delete medication')
+    }
+  }
+
+  const handleToggleMedicationStatus = async (medicationId: number) => {
+    try {
+      await patientMasterDataService.togglePatientMedicationStatus(patient.id, medicationId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error toggling medication status:', err)
+      setError('Failed to update medication status')
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800', label: 'Active' },
@@ -53,14 +286,48 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
     )
   }
 
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'mild': return 'bg-yellow-100 text-yellow-800'
+      case 'moderate': return 'bg-orange-100 text-orange-800'
+      case 'severe': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800'
+      case 'discontinued': return 'bg-red-100 text-red-800'
+      case 'completed': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   // Get latest vital signs
   const latestVitals = patient?.vital_signs?.[0]
   
-  // Get active and discontinued medications
-  const activeMedications = patient?.medications?.filter((med: any) => med.status === 'active') || []
-  const discontinuedMedications = patient?.medications?.filter((med: any) => med.status === 'discontinued') || []
+  // Get active and discontinued medications from patient data
+  const activeMedications = patient?.medications?.filter((med: any) => med?.status === 'active') || []
+  const discontinuedMedications = patient?.medications?.filter((med: any) => med?.status === 'discontinued') || []
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Loading patient data...</span>
+      </div>
+    )
+  }
 
   return (
+    <div className="space-y-1">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+
     <div className="grid grid-cols-1 lg:grid-cols-10 gap-1">
       {/* Column 1 - Patient Info and Assigned Staff (30%) */}
       <div className="space-y-1 lg:col-span-3 bg-blue-50 rounded-lg p-1">
@@ -258,76 +525,255 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
             Upcoming Appointments
           </h3>
           <div className="space-y-1">
-            {patient.appointments?.filter((apt: any) => apt.status === 'scheduled').slice(0, 2).map((appointment: any, index: number) => (
+              {patient.appointments?.filter((apt: any) => apt?.status === 'scheduled').slice(0, 2).map((appointment: any, index: number) => (
               <div key={index} className="p-1 bg-blue-50 rounded border border-blue-200 text-sm">
-                <p className="font-medium text-gray-900 capitalize">{appointment.type}</p>
+                  <p className="font-medium text-gray-900 capitalize">{appointment?.type || 'Unknown'}</p>
                 <p className="text-xs text-gray-600">
+                    {appointment?.scheduled_at ? (
+                      <>
                   {new Date(appointment.scheduled_at).toLocaleDateString()} at {new Date(appointment.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </>
+                    ) : 'No date set'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {appointment.provider ? `with ${appointment.provider.first_name} ${appointment.provider.last_name}` : 'No provider assigned'}
+                    {appointment?.provider ? `with ${appointment.provider.first_name} ${appointment.provider.last_name}` : 'No provider assigned'}
                 </p>
               </div>
             ))}
-            {patient.appointments?.filter((apt: any) => apt.status === 'scheduled').length === 0 && (
+              {(!patient.appointments || patient.appointments.filter((apt: any) => apt?.status === 'scheduled').length === 0) && (
               <p className="text-xs text-gray-500 text-center">No upcoming appointments</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Column 3 - Medications and Allergies (40%) */}
+        {/* Column 3 - Medications, Allergies, and Medical Problems (40%) */}
       <div className="space-y-1 lg:col-span-4 bg-purple-50 rounded-lg p-1">
         {/* Current Medications */}
         <div className="bg-white rounded-lg p-2">
-          <h3 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-md font-semibold text-gray-900 flex items-center">
             <Pill className="h-4 w-4 mr-2" />
             Current Medications
           </h3>
-          <div className="space-y-1">
-            {activeMedications.slice(0, 3).map((medication: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-1 bg-gray-50 rounded text-sm">
-                <div>
-                  <p className="font-medium text-gray-900">{medication.medication_name}</p>
-                  <p className="text-xs text-gray-600">{medication.dosage} • {medication.frequency}</p>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-5 px-1"
+                onClick={handleAddMedication}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
                 </div>
-                <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Active
-                </span>
-              </div>
-            ))}
-            {activeMedications.length > 3 && (
-              <p className="text-xs text-gray-500 text-center">+{activeMedications.length - 3} more</p>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {patientMedications.length > 0 ? (
+                patientMedications.slice(0, 3).map((medication) => (
+                  <div key={medication.id} className="flex items-center justify-between p-1 bg-gray-50 rounded text-sm">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{medication.medication_name || medication.master_medication?.name || 'Unknown Medication'}</p>
+                      <p className="text-xs text-gray-600">
+                        {medication.dosage && `${medication.dosage}`}
+                        {medication.frequency && ` • ${medication.frequency}`}
+                      </p>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${getStatusColor(medication.status)}`}>
+                          {medication.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleEditMedication(medication)}
+                        className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleMedicationStatus(medication.id)}
+                        className={`px-1 py-0.5 text-xs rounded ${medication.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                      >
+                        {medication.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMedication(medication.id)}
+                        className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500 text-center py-2">No medications recorded</p>
+              )}
+              {patientMedications.length > 3 && (
+                <p className="text-xs text-gray-500 text-center">+{patientMedications.length - 3} more</p>
             )}
           </div>
         </div>
 
         {/* Allergies */}
         <div className="bg-white rounded-lg p-2">
-          <h3 className="text-md font-semibold text-gray-900 mb-1 flex items-center">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-md font-semibold text-gray-900 flex items-center">
             <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
             Allergies
           </h3>
-          <div className="space-y-1">
-            {patient.allergies?.slice(0, 3).map((allergy: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-1 bg-red-50 rounded border border-red-200 text-sm">
-                <div>
-                  <p className="font-medium text-gray-900">{allergy.allergen}</p>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-5 px-1"
+                onClick={handleAddAllergy}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+            </div>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {patientAllergies.length > 0 ? (
+                patientAllergies.slice(0, 3).map((allergy) => (
+                  <div key={allergy.id} className="flex items-center justify-between p-1 bg-red-50 rounded border border-red-200 text-sm">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{allergy.master_allergy?.name || 'Unknown Allergy'}</p>
+                      {allergy.reaction && (
                   <p className="text-xs text-gray-600">{allergy.reaction}</p>
-                </div>
-                <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
-                  allergy.severity === 'Severe' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                      )}
+                      <div className="flex items-center space-x-1 mt-1">
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(allergy.severity)}`}>
                   {allergy.severity}
                 </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleEditAllergy(allergy)}
+                        className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleAllergyStatus(allergy.id)}
+                        className={`px-1 py-0.5 text-xs rounded ${allergy.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                      >
+                        {allergy.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAllergy(allergy.id)}
+                        className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500 text-center py-2">No allergies recorded</p>
+              )}
+              {patientAllergies.length > 3 && (
+                <p className="text-xs text-gray-500 text-center">+{patientAllergies.length - 3} more</p>
+              )}
+            </div>
+          </div>
+
+          {/* Medical Problems */}
+          <div className="bg-white rounded-lg p-2">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-md font-semibold text-gray-900 flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-2 text-orange-500" />
+                Medical Problems
+              </h3>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-5 px-1"
+                onClick={handleAddMedicalProblem}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+            </div>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {patientMedicalProblems.length > 0 ? (
+                patientMedicalProblems.slice(0, 3).map((problem) => (
+                  <div key={problem.id} className="flex items-center justify-between p-1 bg-orange-50 rounded border border-orange-200 text-sm">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{problem.master_medical_problem?.name || 'Unknown Problem'}</p>
+                      {problem.notes && (
+                        <p className="text-xs text-gray-600">{problem.notes}</p>
+                      )}
+                      <div className="flex items-center space-x-1 mt-1">
+                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(problem.severity)}`}>
+                          {problem.severity}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleEditMedicalProblem(problem)}
+                        className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleMedicalProblemStatus(problem.id)}
+                        className={`px-1 py-0.5 text-xs rounded ${problem.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                      >
+                        {problem.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMedicalProblem(problem.id)}
+                        className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
               </div>
-            ))}
-            {patient.allergies?.length > 3 && (
-              <p className="text-xs text-gray-500 text-center">+{patient.allergies.length - 3} more</p>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500 text-center py-2">No medical problems recorded</p>
+              )}
+              {patientMedicalProblems.length > 3 && (
+                <p className="text-xs text-gray-500 text-center">+{patientMedicalProblems.length - 3} more</p>
             )}
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Modals */}
+      <AllergyModal
+        isOpen={allergyModal.isOpen}
+        onClose={() => setAllergyModal({ isOpen: false, mode: 'add', allergy: null })}
+        patientId={patient.id}
+        allergy={allergyModal.allergy}
+        onSave={handleSaveAllergy}
+        mode={allergyModal.mode}
+      />
+
+      <MedicalProblemModal
+        isOpen={medicalProblemModal.isOpen}
+        onClose={() => setMedicalProblemModal({ isOpen: false, mode: 'add', medicalProblem: null })}
+        patientId={patient.id}
+        medicalProblem={medicalProblemModal.medicalProblem}
+        onSave={handleSaveMedicalProblem}
+        mode={medicalProblemModal.mode}
+      />
+
+      <MedicationModal
+        isOpen={medicationModal.isOpen}
+        onClose={() => setMedicationModal({ isOpen: false, mode: 'add', medication: null })}
+        patientId={patient.id}
+        medication={medicationModal.medication}
+        onSave={handleSaveMedication}
+        mode={medicationModal.mode}
+      />
     </div>
   )
 }

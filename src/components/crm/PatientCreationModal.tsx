@@ -336,3 +336,6 @@ const PatientCreationModal: React.FC<PatientCreationModalProps> = ({
 }
 
 export default PatientCreationModal
+
+
+

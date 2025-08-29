@@ -14,6 +14,7 @@ import AppointmentsPage from './pages/appointments/AppointmentsPage'
 import CalendarPage from './pages/appointments/CalendarPage'
 import CRMPage from './pages/crm/CRMPage'
 import SettingsPage from './pages/settings/SettingsPage'
+import MasterDataPage from './pages/settings/MasterDataPage'
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -201,6 +202,17 @@ const App: React.FC = () => {
                   <ProtectedRoute>
                     <Layout>
                       <SettingsPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/settings/master-data"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <MasterDataPage />
                     </Layout>
                   </ProtectedRoute>
                 }

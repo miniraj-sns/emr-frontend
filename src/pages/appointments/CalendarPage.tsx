@@ -18,8 +18,24 @@ const CalendarPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
 
   useEffect(() => {
-    dispatch(fetchAppointments({}))
+    dispatch(fetchAppointments({ per_page: 'all' }))
   }, [dispatch])
+
+  // Debug: Log appointments and current date
+  useEffect(() => {
+    console.log('Current calendar date:', currentDate.toDateString())
+    console.log('Appointments loaded:', appointments.length)
+    appointments.forEach((apt: any, index: number) => {
+      const eventDate = new Date(apt.scheduled_at)
+      console.log(`Appointment ${index + 1}:`, {
+        id: apt.id,
+        scheduled_at: apt.scheduled_at,
+        localDate: eventDate.toDateString(),
+        localTime: eventDate.toLocaleTimeString(),
+        patient: apt.patient?.first_name
+      })
+    })
+  }, [appointments, currentDate])
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate)
@@ -200,9 +216,9 @@ const CalendarPage: React.FC = () => {
                        }
                      }}
                    >
-                                         {events.map((event: any) => (
-                       <div
-                         key={event.id}
+                    {events.map((event: any) => (
+                      <div
+                        key={event.id}
                          className={`text-xs p-1 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity ${
                            event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
                            event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
@@ -218,9 +234,10 @@ const CalendarPage: React.FC = () => {
                        >
                          <div className="space-y-0.5">
                            <div className="flex items-center justify-between">
-                             <span className="font-medium">{event.patient?.first_name} {event.type}</span>
+                             <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
                              <span className="text-xs opacity-75">✏️</span>
                            </div>
+                           <div className="text-xs text-gray-600 capitalize">{event.type}</div>
                            <div className="flex items-center justify-between text-xs">
                              <span className={`px-1 rounded text-xs ${
                                event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
@@ -235,8 +252,8 @@ const CalendarPage: React.FC = () => {
                              )}
                            </div>
                          </div>
-                       </div>
-                     ))}
+                      </div>
+                    ))}
                      {!hasEvents && (
                        <div className="text-xs text-gray-400 text-center py-1">
                          Click to schedule
@@ -306,35 +323,35 @@ const CalendarPage: React.FC = () => {
                    }
                  }}
                >
-                                 {slotEvents.map((event: any) => (
-                   <div
-                     key={event.id}
+                {slotEvents.map((event: any) => (
+                  <div
+                    key={event.id}
                      className={`p-2 rounded-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity ${
-                       event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
-                       event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
-                       event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
-                       'bg-gray-50 border-l-4 border-gray-500'
-                     }`}
+                      event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
+                      event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
+                      event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
+                      'bg-gray-50 border-l-4 border-gray-500'
+                    }`}
                      title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
                      onClick={(e) => {
                        e.stopPropagation()
                        setSelectedEvent(event)
                        setShowSchedulingModal(true)
                      }}
-                   >
-                                         <div className="flex items-center justify-between">
+                  >
+                    <div className="flex items-center justify-between">
                        <div className="flex-1">
                          <div className="flex items-center justify-between mb-1">
-                           <h4 className="font-medium text-gray-900 text-sm">
-                             {event.patient?.first_name} {event.patient?.last_name}
-                           </h4>
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {event.patient?.first_name} {event.patient?.last_name}
+                        </h4>
                            <span className="text-xs opacity-75">✏️</span>
                          </div>
-                         <p className="text-xs text-gray-600 capitalize">{event.type}</p>
-                         <p className="text-xs text-gray-500">
-                           {new Date(event.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                           {new Date(new Date(event.scheduled_at).getTime() + event.duration_minutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                         </p>
+                        <p className="text-xs text-gray-600 capitalize">{event.type}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(event.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                          {new Date(new Date(event.scheduled_at).getTime() + event.duration_minutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </p>
                          <div className="flex items-center justify-between mt-1">
                            <span className={`px-2 py-0.5 rounded text-xs ${
                              event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
@@ -348,14 +365,14 @@ const CalendarPage: React.FC = () => {
                              <span className="text-xs text-gray-600">{event.patient.phone}</span>
                            )}
                          </div>
-                         {event.location && (
-                           <p className="text-xs text-gray-500 flex items-center mt-1">
-                             <MapPin className="h-3 w-3 mr-1" />
-                             {event.location}
-                           </p>
-                         )}
-                       </div>
-                     </div>
+                        {event.location && (
+                          <p className="text-xs text-gray-500 flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {event.location}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {slotEvents.length === 0 && (
@@ -451,8 +468,8 @@ const CalendarPage: React.FC = () => {
               const events = getEventsForDate(day)
               
               return (
-                                 <div
-                   key={index}
+                <div
+                  key={index}
                                        className={`min-h-[120px] bg-white p-2 transition-colors ${
                       !isCurrentMonth ? 'text-gray-400' : 
                       (() => {
@@ -462,8 +479,8 @@ const CalendarPage: React.FC = () => {
                         selectedDay.setHours(0, 0, 0, 0)
                         return selectedDay < today ? 'text-gray-400 cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'
                       })()
-                    }`}
-                                       onClick={() => {
+                  }`}
+                  onClick={() => {
                       // Allow today and future dates
                       const today = new Date()
                       today.setHours(0, 0, 0, 0)
@@ -471,15 +488,15 @@ const CalendarPage: React.FC = () => {
                       selectedDay.setHours(0, 0, 0, 0)
                       
                       if (selectedDay >= today) {
-                        setSelectedDate(day)
+                    setSelectedDate(day)
                         setShowSchedulingModal(true)
                       }
-                    }}
-                 >
-                                     <div className={`text-sm font-medium mb-1 ${
-                     isToday ? 'bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''
-                   }`}>
-                                           {day.getDate()}
+                  }}
+                >
+                  <div className={`text-sm font-medium mb-1 ${
+                    isToday ? 'bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''
+                  }`}>
+                    {day.getDate()}
                       {(() => {
                         const today = new Date()
                         today.setHours(0, 0, 0, 0)
@@ -489,13 +506,13 @@ const CalendarPage: React.FC = () => {
                           <div className="text-xs text-gray-400 mt-1">Past</div>
                         ) : null
                       })()}
-                   </div>
+                  </div>
                   
                   {/* Events */}
                   <div className="space-y-1">
-                                         {events.slice(0, 3).map((event: any) => (
-                       <div
-                         key={event.id}
+                    {events.slice(0, 3).map((event: any) => (
+                      <div
+                        key={event.id}
                          className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
                            event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
                            event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
@@ -503,16 +520,17 @@ const CalendarPage: React.FC = () => {
                            'bg-gray-100 text-gray-800 border border-gray-300'
                          }`}
                          title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
-                         onClick={(e) => {
-                           e.stopPropagation()
-                           setSelectedEvent(event)
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedEvent(event)
                            setShowSchedulingModal(true)
                          }}
                        >
                          <div className="flex items-center justify-between">
-                           <span className="font-medium">{event.patient?.first_name} {event.type}</span>
+                           <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
                            <span className="text-xs opacity-75">✏️</span>
                          </div>
+                         <div className="text-xs text-gray-600 capitalize">{event.type}</div>
                          <div className="flex items-center justify-between text-xs mt-0.5">
                            <span className={`px-1 rounded text-xs ${
                              event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
@@ -526,8 +544,8 @@ const CalendarPage: React.FC = () => {
                              <span className="text-gray-600">{event.patient.phone}</span>
                            )}
                          </div>
-                       </div>
-                     ))}
+                      </div>
+                    ))}
                     {events.length > 3 && (
                       <div className="text-xs text-gray-500">
                         +{events.length - 3} more

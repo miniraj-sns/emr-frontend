@@ -144,6 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       children: [
         { name: 'Users & Roles', href: '/settings/users', icon: Users },
         { name: 'System Settings', href: '/settings/system', icon: Settings },
+        { name: 'Master Data', href: '/settings/master-data', icon: Settings },
         { name: 'Help Desk', href: '/settings/help-desk', icon: HelpCircle }
       ]
     }
