@@ -1,0 +1,8 @@
+export { default as PatientOverview } from './PatientOverview'
+export { default as PatientTimeline } from './PatientTimeline'
+export { default as PatientMedicalHistory } from './PatientMedicalHistory'
+export { default as PatientAppointments } from './PatientAppointments'
+export { default as PatientNotes } from './PatientNotes'
+export { default as PatientInsurance } from './PatientInsurance'
+export { default as PatientDocuments } from './PatientDocuments'
+export { default as PatientPrescriptions } from './PatientPrescriptions'
