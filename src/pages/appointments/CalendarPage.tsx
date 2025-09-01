@@ -21,21 +21,38 @@ const CalendarPage: React.FC = () => {
     dispatch(fetchAppointments({ per_page: 'all' }))
   }, [dispatch])
 
-  // Debug: Log appointments and current date
-  useEffect(() => {
-    console.log('Current calendar date:', currentDate.toDateString())
-    console.log('Appointments loaded:', appointments.length)
-    appointments.forEach((apt: any, index: number) => {
-      const eventDate = new Date(apt.scheduled_at)
-      console.log(`Appointment ${index + 1}:`, {
-        id: apt.id,
-        scheduled_at: apt.scheduled_at,
-        localDate: eventDate.toDateString(),
-        localTime: eventDate.toLocaleTimeString(),
-        patient: apt.patient?.first_name
-      })
+  // Check if a time slot is available
+  const isTimeSlotAvailable = (date: Date, timeSlot: { hour: number; minute: number }, facilityId?: number, locationId?: number, providerId?: number) => {
+    const slotDateTime = new Date(date)
+    slotDateTime.setHours(timeSlot.hour, timeSlot.minute, 0, 0)
+    
+    // Check if there's an existing appointment at this time
+    const conflictingAppointment = appointments.find((apt: any) => {
+      const aptDate = new Date(apt.scheduled_at)
+      const aptEndTime = new Date(aptDate.getTime() + (apt.duration_minutes || 30) * 60000)
+      
+      // Check if the time slots overlap
+      const slotEndTime = new Date(slotDateTime.getTime() + 30 * 60000) // Assuming 30-minute slots
+      
+      const timeOverlap = slotDateTime < aptEndTime && slotEndTime > aptDate
+      
+      // Check facility and location if specified (these are shared resources)
+      const facilityMatch = !facilityId || apt.facility_id === facilityId
+      const locationMatch = !locationId || apt.location_id === locationId
+      
+      // Only check provider if it's the same provider (different providers can have appointments at same time)
+      const providerMatch = !providerId || apt.provider_id === providerId
+      
+      // Conflict exists if:
+      // 1. Time overlaps AND
+      // 2. Same facility AND location AND
+      // 3. Same provider (if provider is specified)
+      // Note: Different providers can have appointments at the same time
+      return timeOverlap && facilityMatch && locationMatch && providerMatch
     })
-  }, [appointments, currentDate])
+    
+    return !conflictingAppointment
+  }
 
   const goToPrevious = () => {
     const newDate = new Date(currentDate)
@@ -180,88 +197,105 @@ const CalendarPage: React.FC = () => {
               {weekDays.map(day => {
                 const events = getEventsForTimeSlot(day, slot.hour, slot.minute)
                 const hasEvents = events.length > 0
+                
+                // Check if slot is available for new appointments
+                const isAvailable = !hasEvents && (() => {
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  const selectedDay = new Date(day)
+                  selectedDay.setHours(0, 0, 0, 0)
+                  const now = new Date()
+                  
+                  // Past date or past time slot today (with 15-minute buffer)
+                  const currentHour = now.getHours()
+                  const currentMinute = now.getMinutes()
+                  
+                  return !(selectedDay < today || 
+                         (selectedDay.getTime() === today.getTime() && 
+                          (slot.hour < currentHour || 
+                           (slot.hour === currentHour && slot.minute <= currentMinute))))
+                })()
+                
                 return (
-                                     <div 
-                     key={`${day.toISOString()}-${slot.hour}-${slot.minute}`} 
-                     className={`bg-white min-h-[30px] p-1 transition-colors ${
-                                               hasEvents 
-                          ? 'cursor-not-allowed opacity-75' 
-                          : (() => {
-                              const today = new Date()
-                              today.setHours(0, 0, 0, 0)
-                              const selectedDay = new Date(day)
-                              selectedDay.setHours(0, 0, 0, 0)
-                              const now = new Date()
-                              
-                                                             // Past date or past time slot today (with 15-minute buffer)
-                               const currentHour = now.getHours()
-                               const currentMinute = now.getMinutes()
-                               
-                               return selectedDay < today || 
-                                      (selectedDay.getTime() === today.getTime() && 
-                                       (slot.hour < currentHour || 
-                                        (slot.hour === currentHour && slot.minute <= currentMinute)))
-                            })()
-                          ? 'cursor-not-allowed opacity-50 text-gray-400'
-                          : 'cursor-pointer hover:bg-blue-50'
-                     }`}
-                     onClick={() => {
-                       const selectedDateTime = new Date(day)
-                       selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
-                       const now = new Date()
-                       
-                       if (!hasEvents && selectedDateTime >= now) {
-                         setSelectedDate(selectedDateTime)
-                         setShowSchedulingModal(true)
-                       }
-                     }}
-                   >
+                  <div 
+                    key={`${day.toISOString()}-${slot.hour}-${slot.minute}`} 
+                    className={`bg-white min-h-[30px] p-1 transition-colors ${
+                      !isAvailable
+                        ? 'cursor-not-allowed opacity-50 text-gray-400'
+                        : 'cursor-pointer hover:bg-blue-50'
+                    }`}
+                    onClick={() => {
+                      const selectedDateTime = new Date(day)
+                      selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
+                      const now = new Date()
+                      
+                      if (isAvailable && selectedDateTime >= now) {
+                        setSelectedDate(selectedDateTime)
+                        setShowSchedulingModal(true)
+                      }
+                    }}
+                  >
                     {events.map((event: any) => (
                       <div
                         key={event.id}
-                         className={`text-xs p-1 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity ${
-                           event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                           event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
-                           event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
-                           'bg-gray-100 text-gray-800 border border-gray-300'
-                         }`}
-                         title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
-                         onClick={(e) => {
-                           e.stopPropagation()
-                           console.log('Calendar - Clicked event:', event)
-                           console.log('Calendar - Event facility_id:', event.facility_id)
-                           console.log('Calendar - Event location_id:', event.location_id)
-                           setSelectedEvent(event)
-                           setShowSchedulingModal(true)
-                         }}
-                       >
-                         <div className="space-y-0.5">
-                           <div className="flex items-center justify-between">
-                             <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
-                             <span className="text-xs opacity-75">✏️</span>
-                           </div>
-                           <div className="text-xs text-gray-600 capitalize">{event.type}</div>
-                           <div className="flex items-center justify-between text-xs">
-                             <span className={`px-1 rounded text-xs ${
-                               event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
-                               event.status === 'completed' ? 'bg-green-200 text-green-700' :
-                               event.status === 'no_show' ? 'bg-red-200 text-red-700' :
-                               'bg-gray-200 text-gray-700'
-                             }`}>
-                               {event.status}
-                             </span>
-                             {event.patient?.phone && (
-                               <span className="text-gray-600">{event.patient.phone}</span>
-                             )}
-                           </div>
-                         </div>
+                        className={`text-xs p-1 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity ${
+                          event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                          event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
+                          event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
+                          'bg-gray-100 text-gray-800 border border-gray-300'
+                        }`}
+                        title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedEvent(event)
+                          setShowSchedulingModal(true)
+                        }}
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
+                            <span className="text-xs opacity-75">✏️</span>
+                          </div>
+                          <div className="text-xs text-gray-600 capitalize">{event.type}</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`px-1 rounded text-xs ${
+                              event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
+                              event.status === 'completed' ? 'bg-green-200 text-green-700' :
+                              event.status === 'no_show' ? 'bg-red-200 text-red-700' :
+                              'bg-gray-200 text-gray-700'
+                            }`}>
+                              {event.status}
+                            </span>
+                            {event.patient?.phone && (
+                              <span className="text-gray-600">{event.patient.phone}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
-                     {!hasEvents && (
-                       <div className="text-xs text-gray-400 text-center py-1">
-                         Click to schedule
-                       </div>
-                     )}
+                    
+                    {/* Book Another Button - Always show when there are events */}
+                    {hasEvents && (
+                      <button
+                        className="w-full text-xs bg-green-100 text-green-700 border border-green-300 rounded p-1 mt-1 hover:bg-green-200 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const selectedDateTime = new Date(day)
+                          selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
+                          setSelectedDate(selectedDateTime)
+                          setShowSchedulingModal(true)
+                        }}
+                        title="Book another appointment at this time"
+                      >
+                        + Book Another
+                      </button>
+                    )}
+                    
+                    {!hasEvents && (
+                      <div className="text-xs text-gray-400 text-center py-1">
+                        {isAvailable ? 'Click to schedule' : 'Unavailable'}
+                      </div>
+                    )}
                   </div>
                 )
               })}

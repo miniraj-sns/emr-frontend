@@ -119,12 +119,12 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
       try {
         setLoadingFacilities(true)
         const response = await facilityService.getFacilities({ status: 'active' })
-        console.log('Loaded facilities:', response.facilities)
+
         setFacilities(response.facilities)
         
         // If editing an appointment, load locations for the selected facility
         if (selectedEvent && selectedEvent.facility_id) {
-          console.log('Loading locations for facility after facilities loaded:', selectedEvent.facility_id)
+
           setTimeout(() => {
             loadLocationsForFacility(selectedEvent.facility_id)
           }, 100)
@@ -144,20 +144,39 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
   // Load locations when facility changes
   const loadLocationsForFacility = async (facilityId: number) => {
     try {
-      console.log('Loading locations for facility:', facilityId)
       setLoadingLocations(true)
       const response = await appointmentService.getFacilityLocations(facilityId)
-      console.log('Locations response:', response)
       setLocations(response.locations)
-      console.log('Set locations:', response.locations)
       
       // Location value is already set in form reset, no need to set it again
     } catch (error) {
       console.error('Failed to load locations for facility:', error)
       setLocations([])
     } finally {
-      console.log('Finished loading locations, setLoadingLocations(false)')
       setLoadingLocations(false)
+    }
+  }
+
+  // Check for appointment conflicts
+  const checkAppointmentConflict = async (data: AppointmentFormData) => {
+    try {
+      const scheduledDateTime = new Date(`${data.scheduled_at}T${data.start_time}`)
+      const endDateTime = new Date(scheduledDateTime.getTime() + (data.duration_minutes || 30) * 60000)
+      
+      const conflictData = {
+        scheduled_at: scheduledDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        facility_id: data.facility_id,
+        location_id: data.location_id,
+        provider_id: data.provider_id, // Only check conflicts for the same provider
+        appointment_id: selectedEvent?.id // Exclude current appointment when editing
+      }
+      
+      const response = await appointmentService.checkConflict(conflictData)
+      return response.hasConflict
+    } catch (error) {
+      console.error('Error checking appointment conflict:', error)
+      return false
     }
   }
 
@@ -165,10 +184,7 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
     if (isOpen) {
       if (selectedEvent) {
         // Edit existing appointment
-        console.log('Editing appointment - selectedEvent:', selectedEvent)
-        console.log('Facility ID:', selectedEvent.facility_id)
-        console.log('Location ID:', selectedEvent.location_id)
-        console.log('Fee value from selectedEvent:', selectedEvent.fee, 'Type:', typeof selectedEvent.fee)
+
         
         const eventDate = new Date(selectedEvent.scheduled_at)
         
@@ -188,9 +204,7 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
           is_all_day: false,
           is_recurring: false,
         }
-        console.log('Resetting form with data:', resetData)
         reset(resetData)
-        console.log('Form reset complete. Fee value after reset:', watch('fee'))
         
         setDuration(selectedEvent.duration_minutes || 30)
         
@@ -237,6 +251,13 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
       alert('Cannot schedule appointments in the past. Please select a future date and time.')
       return
     }
+
+    // Check for appointment conflicts
+    const hasConflict = await checkAppointmentConflict(data)
+    if (hasConflict) {
+      alert('This provider already has an appointment at this time. Please choose a different time or provider.')
+      return
+    }
     
     setLoading(true)
     try {
@@ -250,18 +271,15 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
 
       if (selectedEvent) {
         // Update existing appointment
-        console.log('Updating appointment:', selectedEvent.id, appointmentData)
         await appointmentService.updateAppointment(selectedEvent.id, appointmentData)
       } else {
         // Create new appointment
-        console.log('Creating new appointment:', appointmentData)
         await appointmentService.createAppointment(appointmentData)
       }
       
       reset()
       onClose()
       // Fetch all appointments to ensure the calendar shows updated data
-      console.log('Refreshing appointments after save...')
       dispatch(fetchAppointments({ per_page: 'all' }))
       onSuccess?.()
     } catch (error) {
