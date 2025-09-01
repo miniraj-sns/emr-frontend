@@ -12,7 +12,7 @@ const CalendarPage: React.FC = () => {
   const dispatch = useDispatch()
   const { appointments } = useSelector((state: RootState) => state.appointments)
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewType, setViewType] = useState<ViewType>('month')
+  const [viewType, setViewType] = useState<ViewType>('week')
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
@@ -228,6 +228,9 @@ const CalendarPage: React.FC = () => {
                          title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
                          onClick={(e) => {
                            e.stopPropagation()
+                           console.log('Calendar - Clicked event:', event)
+                           console.log('Calendar - Event facility_id:', event.facility_id)
+                           console.log('Calendar - Event location_id:', event.location_id)
                            setSelectedEvent(event)
                            setShowSchedulingModal(true)
                          }}
@@ -596,7 +599,7 @@ const CalendarPage: React.FC = () => {
         selectedDate={selectedDate || undefined}
         selectedEvent={selectedEvent}
         onSuccess={() => {
-          dispatch(fetchAppointments({}))
+          dispatch(fetchAppointments({ per_page: 'all' }))
         }}
       />
     </div>

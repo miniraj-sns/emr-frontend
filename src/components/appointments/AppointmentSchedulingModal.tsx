@@ -44,7 +44,13 @@ const appointmentSchema = z.object({
   is_all_day: z.boolean().default(false),
   is_recurring: z.boolean().default(false),
   recurring_pattern: z.string().optional(),
-  fee: z.number().min(0, 'Fee cannot be negative').optional(),
+  fee: z.union([z.string(), z.number()]).transform((val) => {
+    if (typeof val === 'string') {
+      const parsed = parseFloat(val);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return val || 0;
+  }).optional(),
   service_code: z.string().optional(),
 })
 
@@ -113,7 +119,16 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
       try {
         setLoadingFacilities(true)
         const response = await facilityService.getFacilities({ status: 'active' })
+        console.log('Loaded facilities:', response.facilities)
         setFacilities(response.facilities)
+        
+        // If editing an appointment, load locations for the selected facility
+        if (selectedEvent && selectedEvent.facility_id) {
+          console.log('Loading locations for facility after facilities loaded:', selectedEvent.facility_id)
+          setTimeout(() => {
+            loadLocationsForFacility(selectedEvent.facility_id)
+          }, 100)
+        }
       } catch (error) {
         console.error('Failed to load facilities:', error)
       } finally {
@@ -124,7 +139,7 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
     if (isOpen) {
       loadFacilities()
     }
-  }, [isOpen])
+  }, [isOpen, selectedEvent, setValue])
 
   // Load locations when facility changes
   const loadLocationsForFacility = async (facilityId: number) => {
@@ -135,10 +150,13 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
       console.log('Locations response:', response)
       setLocations(response.locations)
       console.log('Set locations:', response.locations)
+      
+      // Location value is already set in form reset, no need to set it again
     } catch (error) {
       console.error('Failed to load locations for facility:', error)
       setLocations([])
     } finally {
+      console.log('Finished loading locations, setLoadingLocations(false)')
       setLoadingLocations(false)
     }
   }
@@ -147,24 +165,36 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
     if (isOpen) {
       if (selectedEvent) {
         // Edit existing appointment
+        console.log('Editing appointment - selectedEvent:', selectedEvent)
+        console.log('Facility ID:', selectedEvent.facility_id)
+        console.log('Location ID:', selectedEvent.location_id)
+        console.log('Fee value from selectedEvent:', selectedEvent.fee, 'Type:', typeof selectedEvent.fee)
+        
         const eventDate = new Date(selectedEvent.scheduled_at)
-        setValue('patient_id', selectedEvent.patient_id)
-        setValue('provider_id', selectedEvent.provider_id)
-        setValue('coach_id', selectedEvent.coach_id)
-        setValue('scheduled_at', eventDate.toISOString().split('T')[0])
-        setValue('start_time', eventDate.toTimeString().slice(0, 5))
-        setValue('duration_minutes', selectedEvent.duration_minutes || 30)
-        setValue('type', selectedEvent.type)
-        setValue('facility_id', selectedEvent.facility_id)
-        setValue('location_id', selectedEvent.location_id)
-        setValue('notes', selectedEvent.notes)
-        setValue('fee', selectedEvent.fee || 0)
+        
+        // Reset form with all values including facility and location
+        const resetData = {
+          patient_id: selectedEvent.patient_id,
+          provider_id: selectedEvent.provider_id,
+          coach_id: selectedEvent.coach_id,
+          scheduled_at: eventDate.toISOString().split('T')[0],
+          start_time: eventDate.toTimeString().slice(0, 5),
+          duration_minutes: selectedEvent.duration_minutes || 30,
+          type: selectedEvent.type,
+          facility_id: selectedEvent.facility_id,
+          location_id: selectedEvent.location_id,
+          notes: selectedEvent.notes,
+          fee: selectedEvent.fee ? (typeof selectedEvent.fee === 'string' ? parseFloat(selectedEvent.fee) : selectedEvent.fee) : 0,
+          is_all_day: false,
+          is_recurring: false,
+        }
+        console.log('Resetting form with data:', resetData)
+        reset(resetData)
+        console.log('Form reset complete. Fee value after reset:', watch('fee'))
+        
         setDuration(selectedEvent.duration_minutes || 30)
         
-        // Load locations if facility is set
-        if (selectedEvent.facility_id) {
-          loadLocationsForFacility(selectedEvent.facility_id)
-        }
+        // Note: facility and location loading is handled in the facilities loading useEffect
              } else if (selectedDate) {
          // Create new appointment
          setValue('scheduled_at', selectedDate.toISOString().split('T')[0])
@@ -220,16 +250,20 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
 
       if (selectedEvent) {
         // Update existing appointment
+        console.log('Updating appointment:', selectedEvent.id, appointmentData)
         await appointmentService.updateAppointment(selectedEvent.id, appointmentData)
       } else {
         // Create new appointment
+        console.log('Creating new appointment:', appointmentData)
         await appointmentService.createAppointment(appointmentData)
       }
       
-             reset()
-       onClose()
-       dispatch(fetchAppointments({}))
-       onSuccess?.()
+      reset()
+      onClose()
+      // Fetch all appointments to ensure the calendar shows updated data
+      console.log('Refreshing appointments after save...')
+      dispatch(fetchAppointments({ per_page: 'all' }))
+      onSuccess?.()
     } catch (error) {
       console.error('Failed to save appointment:', error)
     } finally {
@@ -244,9 +278,10 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
       setLoading(true)
       try {
         await appointmentService.deleteAppointment(selectedEvent.id)
-                 onClose()
-         dispatch(fetchAppointments({}))
-         onSuccess?.()
+        onClose()
+        // Fetch all appointments to ensure the calendar shows updated data
+        dispatch(fetchAppointments({ per_page: 'all' }))
+        onSuccess?.()
       } catch (error) {
         console.error('Failed to delete appointment:', error)
       } finally {
@@ -461,10 +496,6 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
 
               {/* Facility and Location Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Debug Info */}
-                <div className="col-span-2 mb-2 p-2 bg-blue-50 rounded text-xs">
-                  <p>Debug: Facility ID: {watch('facility_id') || 'none'}, Locations: {locations.length}, Loading: {loadingLocations ? 'yes' : 'no'}</p>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Building className="h-4 w-4 inline mr-1" />
@@ -472,10 +503,9 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
                   </label>
                   <select
                     {...register('facility_id', { valueAsNumber: true })}
+                    value={watch('facility_id') || ''}
                     onChange={(e) => {
-                      console.log('Facility dropdown changed:', e.target.value)
                       const facilityId = parseInt(e.target.value)
-                      console.log('Parsed facility ID:', facilityId)
                       if (facilityId) {
                         loadLocationsForFacility(facilityId)
                       } else {
@@ -505,6 +535,7 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
                   </label>
                   <select
                     {...register('location_id', { valueAsNumber: true })}
+                    value={watch('location_id') || ''}
                     disabled={!watch('facility_id') || loadingLocations}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
@@ -512,15 +543,11 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
                     {loadingLocations ? (
                       <option value="" disabled>Loading locations...</option>
                     ) : watch('facility_id') ? (
-                      (() => {
-                        console.log('Rendering locations dropdown. Locations:', locations)
-                        console.log('Watch facility_id:', watch('facility_id'))
-                        return locations.map((location) => (
-                          <option key={location.id} value={location.id}>
-                            {location.name} {location.city && location.state ? `(${location.city}, ${location.state})` : ''}
-                          </option>
-                        ))
-                      })()
+                      locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name} {location.city && location.state ? `(${location.city}, ${location.state})` : ''}
+                        </option>
+                      ))
                     ) : (
                       <option value="" disabled>Select a facility first</option>
                     )}
@@ -589,10 +616,11 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
                   <input
                     type="number"
                     step="0.01"
-                    {...register('fee', { valueAsNumber: true })}
+                    {...register('fee')}
                     placeholder="0.00"
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+
                 </div>
                 {errors.fee && (
                   <p className="mt-1 text-sm text-red-600">{errors.fee.message}</p>

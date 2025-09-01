@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Search, Bell, User, Menu, Grid, List, X, ChevronDown, Home, Users, Calendar, Building, Package, BarChart3, Settings, LayoutDashboard } from 'lucide-react'
+import { Search, Bell, User, Menu, Grid, List, X, ChevronDown, Home, Users, Calendar, Building, Package, BarChart3, Settings, LayoutDashboard, Video, Clock } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
 import { toggleSidebar, setLayoutType } from '../../features/ui/uiSlice'
@@ -28,9 +28,34 @@ const TopBarHeader: React.FC = () => {
   const navigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Patients', path: '/patients', icon: Users, hasDropdown: true },
-    { name: 'Appointments', path: '/appointments', icon: Calendar, hasDropdown: true },
+    { 
+      name: 'Appointments', 
+      path: '/appointments', 
+      icon: Calendar, 
+      hasDropdown: true, 
+      isAppointments: true,
+      subItems: [
+        { name: 'All Appointments', path: '/appointments', icon: Calendar },
+        { name: 'Calendar', path: '/appointments/calendar', icon: Calendar },
+        { name: 'Video Sessions', path: '/appointments/video-sessions', icon: Video },
+        { name: 'Schedule', path: '/appointments/schedule', icon: Clock }
+      ]
+    },
     { name: 'Clinic', path: '/clinic', icon: Building, hasDropdown: true, isClinic: true },
-    { name: 'CRM', path: '/crm', icon: Building, hasDropdown: true },
+    { 
+      name: 'CRM', 
+      path: '/crm', 
+      icon: Building, 
+      hasDropdown: true, 
+      isCRM: true,
+      subItems: [
+        { name: 'Dashboard', path: '/crm', icon: LayoutDashboard },
+        { name: 'Leads', path: '/crm/leads', icon: Users },
+        { name: 'Contacts', path: '/crm/contacts', icon: Users },
+        { name: 'Opportunities', path: '/crm/opportunities', icon: Package },
+        { name: 'Follow-ups', path: '/crm/follow-ups', icon: Clock }
+      ]
+    },
   ]
 
   return (
@@ -88,6 +113,22 @@ const TopBarHeader: React.FC = () => {
                                 >
                                   Locations
                                 </Link>
+                              </>
+                            ) : item.isAppointments ? (
+                              <>
+                                {item.subItems?.map((subItem) => {
+                                  const SubIconComponent = subItem.icon
+                                  return (
+                                    <Link
+                                      key={subItem.path}
+                                      to={subItem.path}
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                      <SubIconComponent className="mr-2 h-4 w-4" />
+                                      {subItem.name}
+                                    </Link>
+                                  )
+                                })}
                               </>
                             ) : (
                               <>

@@ -10,6 +10,7 @@ export interface Appointment {
   type: 'coaching' | 'onboarding' | 'support'
   status: 'scheduled' | 'completed' | 'no_show' | 'canceled' | 'rescheduled'
   notes?: string
+  fee?: number
   metadata?: Record<string, any>
   created_at: string
   updated_at: string
@@ -82,6 +83,7 @@ export interface CreateAppointmentRequest {
   duration_minutes?: number
   type: 'coaching' | 'onboarding' | 'support'
   notes?: string
+  fee?: number
   metadata?: Record<string, any>
 }
 
@@ -95,6 +97,7 @@ export interface UpdateAppointmentRequest {
   type?: 'coaching' | 'onboarding' | 'support'
   status?: 'scheduled' | 'completed' | 'no_show' | 'canceled' | 'rescheduled'
   notes?: string
+  fee?: number
   metadata?: Record<string, any>
 }
 
