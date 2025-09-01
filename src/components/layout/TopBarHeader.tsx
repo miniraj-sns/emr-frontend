@@ -92,7 +92,7 @@ const TopBarHeader: React.FC = () => {
                             ) : (
                               <>
                                 <Link
-                                  to={`${item.path}/list`}
+                                  to={item.name === 'Patients' ? item.path : `${item.path}/list`}
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
                                   View All {item.name}
