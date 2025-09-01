@@ -1,462 +1,260 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
+import { Search, Bell, User, Menu, Grid, List, X, ChevronDown, Home, Users, Calendar, Building, Package, BarChart3, Settings, LayoutDashboard } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
-import { useAuth } from '../../hooks/useAuth'
+import { toggleSidebar, setLayoutType } from '../../features/ui/uiSlice'
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  Bell, 
-  Search, 
-  User, 
-  Settings, 
-  LogOut,
-  ChevronDown,
-  LayoutDashboard,
-  Users,
-  Calendar,
-  Building2,
-  Package,
-  BarChart3,
-  FileText,
-  MessageSquare,
-  HelpCircle,
-  ChevronRight,
-  ChevronDown as ChevronDownIcon,
-  X,
-  MoreHorizontal
-} from 'lucide-react'
-import LayoutSwitcher from './LayoutSwitcher'
 
 const TopBarHeader: React.FC = () => {
   const dispatch = useDispatch()
-  const { user } = useSelector((state: RootState) => state.auth)
-  const { logout } = useAuth()
   const location = useLocation()
+  const { sidebar, layout } = useSelector((state: RootState) => state.ui)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [showSearchPopup, setShowSearchPopup] = useState(false)
-  const [showOverflowMenu, setShowOverflowMenu] = useState(false)
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [visibleMenus, setVisibleMenus] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
-  const [overflowMenuPosition, setOverflowMenuPosition] = useState({ top: 0, left: 0 })
-  const [expandedOverflowMenus, setExpandedOverflowMenus] = useState<string[]>([])
-  
-  const userMenuRef = useRef<HTMLDivElement>(null)
-  const notificationsRef = useRef<HTMLDivElement>(null)
-  const searchPopupRef = useRef<HTMLDivElement>(null)
-  const overflowMenuRef = useRef<HTMLDivElement>(null)
-  const navRef = useRef<HTMLDivElement>(null)
 
-  // Menu items configuration
-  const menuItems = [
-    {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: LayoutDashboard
-    },
-    {
-      name: 'Patients',
-      href: '/patients',
-      icon: Users
-    },
-    {
-      name: 'Appointments',
-      href: '/appointments',
-      icon: Calendar
-    },
-    {
-      name: 'CRM',
-      href: '/crm',
-      icon: Building2
-    },
-    {
-      name: 'Inventory',
-      href: '/inventory',
-      icon: Package
-    },
-    {
-      name: 'Reports',
-      href: '/reports',
-      icon: BarChart3
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      children: [
-        { name: 'System Settings', href: '/settings/system' },
-        { name: 'Master Data', href: '/settings/master-data' },
-        { name: 'Users & Roles', href: '/settings/users' },
-        { name: 'Help Desk', href: '/settings/help-desk' }
-      ]
-    }
+  const handleLayoutToggle = () => {
+    const newLayout = layout.type === 'sidebar' ? 'topbar' : 'sidebar'
+    dispatch(setLayoutType(newLayout))
+  }
+
+  const handleSidebarToggle = () => {
+    dispatch(toggleSidebar())
+  }
+
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/')
+  }
+
+  const navigationItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Patients', path: '/patients', icon: Users, hasDropdown: true },
+    { name: 'Appointments', path: '/appointments', icon: Calendar, hasDropdown: true },
+    { name: 'Clinic', path: '/clinic', icon: Building, hasDropdown: true, isClinic: true },
+    { name: 'CRM', path: '/crm', icon: Building, hasDropdown: true },
   ]
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false)
-      }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
-        setShowNotifications(false)
-      }
-      if (searchPopupRef.current && !searchPopupRef.current.contains(event.target as Node)) {
-        setShowSearchPopup(false)
-      }
-      
-      // Handle overflow menu and its submenus
-      const target = event.target as Element
-      const isClickOnOverflowButton = overflowMenuRef.current && overflowMenuRef.current.contains(event.target as Node)
-      const isClickOnOverflowSubmenu = target.closest && target.closest('[data-overflow-submenu]')
-      const isClickOnOverflowMenuButton = target.closest && target.closest('[data-overflow-menu-button]')
-      
-      if (!isClickOnOverflowButton && !isClickOnOverflowSubmenu && !isClickOnOverflowMenuButton) {
-        setShowOverflowMenu(false)
-        setExpandedOverflowMenus([])
-      }
-      
-      // Close main navigation submenus when clicking outside
-      const isClickOnMenuButton = target.closest && target.closest('[data-menu-button]')
-      const isClickOnSubmenu = target.closest && target.closest('[data-submenu]')
-      
-      if (!isClickOnMenuButton && !isClickOnSubmenu) {
-        setExpandedMenus([])
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  const handleLogout = () => {
-    logout()
-    setShowUserMenu(false)
-  }
-
-  const toggleMenu = (menuName: string) => {
-    setExpandedMenus(prev => 
-      prev.includes(menuName) 
-        ? prev.filter(name => name !== menuName)
-        : [...prev, menuName]
-    )
-  }
-
-  const toggleOverflowMenu = () => {
-    setShowOverflowMenu(!showOverflowMenu)
-    if (!showOverflowMenu) {
-        updateOverflowMenuPosition()
-      }
-    }
-
-  const updateOverflowMenuPosition = () => {
-    if (overflowMenuRef.current) {
-      const rect = overflowMenuRef.current.getBoundingClientRect()
-      setOverflowMenuPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX
-      })
-    }
-  }
-
-  const getOverflowMenus = () => {
-    return menuItems.filter((_, index) => !visibleMenus.includes(index))
-  }
-
-  const renderMenuItem = (item: any, index: number) => {
-    const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
-    const isExpanded = expandedMenus.includes(item.name)
-    
-    if (item.children) {
-      return (
-        <div key={item.name} className="relative" data-menu-button>
-          <button
-            onClick={() => toggleMenu(item.name)}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              isActive
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            <item.icon className="h-5 w-5 mr-2" />
-            {item.name}
-            <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {isExpanded && (
-            <div 
-              className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
-              data-submenu
-            >
-              <div className="py-1">
-                {item.children.map((child: any) => (
-                  <Link
-                    key={child.name}
-                    to={child.href}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setExpandedMenus([])}
-                  >
-                    {child.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <Link
-        key={item.name}
-        to={item.href}
-        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-          isActive
-            ? 'bg-blue-100 text-blue-700'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-        }`}
-      >
-        <item.icon className="h-5 w-5 mr-2" />
-        {item.name}
-      </Link>
-    )
-  }
-
-  const renderOverflowMenuItem = (item: any, index: number) => {
-    const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/')
-    const isExpanded = expandedOverflowMenus.includes(item.name)
-    
-    if (item.children) {
-      return (
-        <div key={item.name} className="relative" data-overflow-menu-button>
-          <button
-            onClick={() => {
-              setExpandedOverflowMenus(prev => 
-                prev.includes(item.name) 
-                  ? prev.filter(name => name !== item.name)
-                  : [...prev, item.name]
-              )
-            }}
-            className={`flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-              isActive ? 'bg-blue-50 text-blue-700' : ''
-            }`}
-          >
-            <div className="flex items-center">
-              <item.icon className="h-4 w-4 mr-2" />
-              {item.name}
-            </div>
-            <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-          </button>
-          
-          {isExpanded && (
-            <div 
-              className="absolute left-full top-0 ml-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50"
-              data-overflow-submenu
-            >
-              <div className="py-1">
-                {item.children.map((child: any) => (
-                  <Link
-                    key={child.name}
-                    to={child.href}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => {
-                      setShowOverflowMenu(false)
-                      setExpandedOverflowMenus([])
-                    }}
-                  >
-                    {child.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <Link
-        key={item.name}
-        to={item.href}
-        className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
-          isActive ? 'bg-blue-50 text-blue-700' : ''
-        }`}
-        onClick={() => {
-          setShowOverflowMenu(false)
-          setExpandedOverflowMenus([])
-        }}
-      >
-        <item.icon className="h-4 w-4 mr-2" />
-        {item.name}
-      </Link>
-    )
-  }
-
   return (
-    <>
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Brand */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-lg font-semibold text-gray-900">EMR</h1>
+    <div className="bg-white border-b border-gray-200">
+      {/* Top Header */}
+      <header className="px-6 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left side - Logo and Navigation */}
+          <div className="flex items-center space-x-8">
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">MB</span>
               </div>
+              <span className="text-lg font-semibold text-gray-900">MindBrite EMR</span>
             </div>
             
-            {/* Navigation Menu */}
-            <nav ref={navRef} className="hidden md:flex items-center space-x-1 flex-1 min-w-0">
-              <div className="flex items-center space-x-1">
-                {menuItems.map((item, index) => {
-                  if (visibleMenus.includes(index)) {
-                    return renderMenuItem(item, index)
-                  }
-                  return null
-                })}
-              </div>
-              
-              {/* Overflow Menu */}
-              {getOverflowMenus().length > 0 && (
-                <div className="flex-shrink-0" ref={overflowMenuRef}>
-                  <button
-                    onClick={toggleOverflowMenu}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      showOverflowMenu
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                    <span className="ml-1 text-xs text-gray-500">({getOverflowMenus().length})</span>
-                  </button>
-                </div>
-              )}
-              
-              {/* Overflow Menu Dropdown */}
-              {showOverflowMenu && (
-                <div 
-                  className="fixed w-56 bg-white rounded-md shadow-lg border border-gray-200 z-[9999]"
-                  style={{
-                    top: overflowMenuPosition.top,
-                    left: overflowMenuPosition.left,
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}
-                >
-                  <div className="py-1">
-                    <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
-                      More Options
+            {/* Top Navigation Menu - Always visible in topbar layout */}
+            {layout.type === 'topbar' && (
+              <nav className="flex items-center space-x-6">
+                {navigationItems.map((item) => {
+                  const IconComponent = item.icon
+                  return (
+                    <div key={item.path} className="relative group">
+                      <Link
+                        to={item.path}
+                        className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          isActive(item.path)
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                        }`}
+                      >
+                        <IconComponent className="mr-2 h-4 w-4" />
+                        {item.name}
+                        {item.hasDropdown && (
+                          <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                      </Link>
+                      
+                      {/* Dropdown menu for items with hasDropdown */}
+                      {item.hasDropdown && (
+                        <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                          <div className="py-1">
+                            {item.isClinic ? (
+                              <>
+                                <Link
+                                  to="/facilities"
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  Facilities
+                                </Link>
+                                <Link
+                                  to="/locations"
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  Locations
+                                </Link>
+                              </>
+                            ) : (
+                              <>
+                                <Link
+                                  to={`${item.path}/list`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  View All {item.name}
+                                </Link>
+                                <Link
+                                  to={`${item.path}/new`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  Add New {item.name.slice(0, -1)}
+                                </Link>
+                                <Link
+                                  to={`${item.path}/reports`}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  {item.name} Reports
+                                </Link>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {getOverflowMenus().map((item, index) => renderOverflowMenuItem(item, index))}
+                  )
+                })}
+                
+                {/* More menu */}
+                <div className="relative group">
+                  <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                    <span className="mr-2">⋯</span>
+                    <span className="text-xs text-gray-500">(3)</span>
+                  </button>
+                  
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="py-1">
+                      <Link
+                        to="/inventory"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Inventory
+                      </Link>
+                      <Link
+                        to="/reports"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Reports
+                      </Link>
+                      <Link
+                        to="/settings"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Settings
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              )}
-            </nav>
+              </nav>
+            )}
+          </div>
 
-            {/* Right side actions */}
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-            <div className="relative" ref={searchPopupRef}>
+          {/* Right side - Search, Layout Toggle, Notifications and User */}
+          <div className="flex items-center space-x-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+              />
+            </div>
+
+            {/* Layout Toggle Buttons */}
+            <div className="flex items-center space-x-1 border-l border-gray-300 pl-4">
               <button
-                  onClick={() => setShowSearchPopup(!showSearchPopup)}
-                  className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+                onClick={handleLayoutToggle}
+                className={`p-2 rounded-md transition-colors ${
+                  layout.type === 'sidebar' 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Sidebar Layout"
               >
-                <Search className="h-5 w-5" />
+                <List className="h-4 w-4" />
               </button>
-              
-              {showSearchPopup && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                  <div className="p-4">
-                        <input
-                          type="text"
-                        placeholder="Search..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                  </div>
-                </div>
-              )}
+              <button
+                onClick={handleLayoutToggle}
+                className={`p-2 rounded-md transition-colors ${
+                  layout.type === 'topbar' 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Top Bar Layout"
+              >
+                <Grid className="h-4 w-4" />
+              </button>
             </div>
 
             {/* Notifications */}
-            <div className="relative" ref={notificationsRef}>
+            <button 
+              className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            
+            {/* User Profile */}
+            <div className="relative">
               <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-3 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
               >
-                <Bell className="h-5 w-5" />
-              </button>
-              
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                    <div className="p-4">
-                      <h3 className="text-sm font-medium text-gray-900 mb-2">Notifications</h3>
-                      <p className="text-sm text-gray-500">No new notifications</p>
-                  </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">AU Admin User</p>
                 </div>
-              )}
-            </div>
-
-              {/* Layout Switcher */}
-              <LayoutSwitcher />
-
-              {/* User Menu */}
-            <div className="relative" ref={userMenuRef}>
-              <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="text-sm font-medium text-gray-700">
-                    {user?.name || 'User'}
-                  </span>
-                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                <ChevronDown className="h-4 w-4" />
               </button>
-              
+
+              {/* User dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
                   <div className="py-1">
-                      <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                        <p className="font-medium">{user?.name || 'User'}</p>
-                        <p className="text-xs text-gray-500">
-                          {user?.roles?.join(', ') || 'User'}
-                        </p>
-                      </div>
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                      <div className="font-medium">Admin User</div>
+                      <div className="text-gray-500">admin@mindbrite.com</div>
+                    </div>
+                    
                     <Link
                       to="/profile"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <User className="h-4 w-4 mr-2" />
+                      <User className="mr-3 h-4 w-4" />
                       Profile
                     </Link>
+                    
                     <Link
                       to="/settings"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <Settings className="h-4 w-4 mr-2" />
+                      <Settings className="mr-3 h-4 w-4" />
                       Settings
                     </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Sign out
-                    </button>
+                    
+                    <div className="border-t border-gray-100">
+                      <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <span className="mr-3">🚪</span>
+                        Sign out
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
-    </header>
-    </>
+      </header>
+    </div>
   )
 }
 
 export default TopBarHeader
+

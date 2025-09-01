@@ -15,6 +15,9 @@ import CalendarPage from './pages/appointments/CalendarPage'
 import CRMPage from './pages/crm/CRMPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import MasterDataPage from './pages/settings/MasterDataPage'
+import FacilityManagementPage from './pages/settings/FacilityManagementPage'
+import LocationManagementPage from './pages/settings/LocationManagementPage'
+import AppointmentDemoPage from './pages/appointments/AppointmentDemoPage'
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -213,6 +216,62 @@ const App: React.FC = () => {
                   <ProtectedRoute>
                     <Layout>
                       <MasterDataPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/facilities"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FacilityManagementPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/facilities/new"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <FacilityManagementPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/locations"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LocationManagementPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              <Route
+                path="/locations/new"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <LocationManagementPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Appointment Demo */}
+              <Route
+                path="/appointment-demo"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AppointmentDemoPage />
                     </Layout>
                   </ProtectedRoute>
                 }

@@ -7,6 +7,7 @@ import {
   CreateAppointmentRequest,
   UpdateAppointmentRequest
 } from '../types/appointment'
+import { Location } from './locationService'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
@@ -124,5 +125,11 @@ export const appointmentService = {
       date_to: today,
       status: ['completed', 'no_show', 'canceled']
     })
+  },
+
+  // Get locations for a specific facility
+  async getFacilityLocations(facilityId: number): Promise<{ locations: Location[] }> {
+    const response = await apiClient.get(`/facilities/${facilityId}/locations`)
+    return response.data
   }
 }

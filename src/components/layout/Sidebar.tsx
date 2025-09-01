@@ -118,6 +118,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       ]
     },
     {
+      name: 'Clinic',
+      href: '/clinic',
+      icon: Building2,
+      children: [
+        { name: 'Facilities', href: '/facilities', icon: Building2 },
+        { name: 'Locations', href: '/locations', icon: Building2 }
+      ]
+    },
+    {
       name: 'Inventory',
       href: '/inventory',
       icon: Package,

@@ -3,11 +3,12 @@ export interface Appointment {
   patient_id: number
   coach_id?: number
   provider_id?: number
+  facility_id?: number
+  location_id?: number
   scheduled_at: string
   duration_minutes: number
   type: 'coaching' | 'onboarding' | 'support'
   status: 'scheduled' | 'completed' | 'no_show' | 'canceled' | 'rescheduled'
-  location?: string
   notes?: string
   metadata?: Record<string, any>
   created_at: string
@@ -16,6 +17,8 @@ export interface Appointment {
   patient?: Patient
   coach?: User
   provider?: User
+  facility?: Facility
+  location?: Location
 }
 
 export interface Patient {
@@ -30,6 +33,20 @@ export interface User {
   first_name: string
   last_name: string
   email: string
+}
+
+export interface Facility {
+  id: number
+  name: string
+  color?: string
+}
+
+export interface Location {
+  id: number
+  name: string
+  city?: string
+  state?: string
+  location_type: string
 }
 
 export interface AppointmentListResponse {
@@ -59,10 +76,11 @@ export interface CreateAppointmentRequest {
   patient_id: number
   coach_id?: number
   provider_id?: number
+  facility_id?: number
+  location_id?: number
   scheduled_at: string
   duration_minutes?: number
   type: 'coaching' | 'onboarding' | 'support'
-  location?: string
   notes?: string
   metadata?: Record<string, any>
 }
@@ -70,11 +88,12 @@ export interface CreateAppointmentRequest {
 export interface UpdateAppointmentRequest {
   coach_id?: number
   provider_id?: number
+  facility_id?: number
+  location_id?: number
   scheduled_at?: string
   duration_minutes?: number
   type?: 'coaching' | 'onboarding' | 'support'
   status?: 'scheduled' | 'completed' | 'no_show' | 'canceled' | 'rescheduled'
-  location?: string
   notes?: string
   metadata?: Record<string, any>
 }

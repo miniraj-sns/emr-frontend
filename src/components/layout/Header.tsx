@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronDown,
   Menu as MenuIcon,
-  X
+  X,
+  PanelLeft
 } from 'lucide-react'
 import LayoutSwitcher from './LayoutSwitcher'
 
@@ -93,7 +94,7 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-lg bg-primary-600 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">MB</span>
               </div>
               <div className="hidden sm:block">
@@ -102,13 +103,19 @@ const Header: React.FC = () => {
               </div>
             </div>
             
+            {/* Sidebar toggle button - Different icon for sidebar */}
             <button
               onClick={handleToggleSidebar}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className={`p-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                sidebar.isOpen 
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' 
+                  : 'text-gray-400 hover:text-gray-500 hover:bg-gray-100'
+              }`}
               aria-label="Toggle sidebar"
               type="button"
+              title={sidebar.isOpen ? "Hide Sidebar" : "Show Sidebar"}
             >
-              <MenuIcon className="h-6 w-6" />
+              {sidebar.isOpen ? <X className="h-6 w-6" /> : <PanelLeft className="h-6 w-6" />}
             </button>
 
             {/* Layout Switcher */}
@@ -118,7 +125,7 @@ const Header: React.FC = () => {
             <div className="relative" ref={searchPopupRef}>
               <button
                 onClick={toggleSearchPopup}
-                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 aria-label="Search"
               >
                 <Search className="h-6 w-6" />
@@ -147,14 +154,14 @@ const Header: React.FC = () => {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Search patients, appointments, reports..."
-                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           autoFocus
                         />
                       </div>
                       <div className="mt-3 flex justify-end">
                         <button
                           type="submit"
-                          className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           Search
                         </button>
@@ -176,7 +183,7 @@ const Header: React.FC = () => {
             <div className="relative" ref={notificationsRef}>
               <button
                 onClick={toggleNotifications}
-                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 aria-label="Notifications"
               >
                 <Bell className="h-6 w-6" />
@@ -202,11 +209,11 @@ const Header: React.FC = () => {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={toggleUserMenu}
-                className="flex items-center space-x-3 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                className="flex items-center space-x-3 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 aria-label="User menu"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
                     <span className="text-sm font-medium text-white">
                       {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
                     </span>

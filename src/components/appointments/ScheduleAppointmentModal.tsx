@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { X, Calendar, Clock, User, MapPin, FileText } from 'lucide-react'
+import { X, Calendar, Clock, User, MapPin, FileText, Building } from 'lucide-react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import { appointmentService } from '../../services/appointmentService'
 import { createAppointment } from '../../features/appointments/appointmentsSlice'
 import { useDispatch } from 'react-redux'
+import { facilityService, Facility } from '../../services/facilityService'
+import { locationService, Location } from '../../services/locationService'
 
 // Form validation schema
 const appointmentSchema = z.object({
@@ -19,7 +21,8 @@ const appointmentSchema = z.object({
   type: z.enum(['coaching', 'onboarding', 'support'], {
     required_error: 'Appointment type is required'
   }),
-  location: z.string().optional(),
+  facility_id: z.number().optional(),
+  location_id: z.number().optional(),
   notes: z.string().optional(),
 })
 
@@ -50,6 +53,10 @@ const ScheduleAppointmentModal: React.FC<ScheduleAppointmentModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [providers, setProviders] = useState<User[]>([])
   const [coaches, setCoaches] = useState<User[]>([])
+  const [facilities, setFacilities] = useState<Facility[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loadingFacilities, setLoadingFacilities] = useState(false)
+  const [loadingLocations, setLoadingLocations] = useState(false)
 
   const {
     register,
@@ -103,6 +110,39 @@ const ScheduleAppointmentModal: React.FC<ScheduleAppointmentModalProps> = ({
       loadUsers()
     }
   }, [isOpen])
+
+  // Load facilities
+  useEffect(() => {
+    const loadFacilities = async () => {
+      try {
+        setLoadingFacilities(true)
+        const response = await facilityService.getFacilities({ status: 'active' })
+        setFacilities(response.facilities)
+      } catch (error) {
+        console.error('Failed to load facilities:', error)
+      } finally {
+        setLoadingFacilities(false)
+      }
+    }
+
+    if (isOpen) {
+      loadFacilities()
+    }
+  }, [isOpen])
+
+  // Load locations when facility changes
+  const loadLocationsForFacility = async (facilityId: number) => {
+    try {
+      setLoadingLocations(true)
+      const response = await appointmentService.getFacilityLocations(facilityId)
+      setLocations(response.locations)
+    } catch (error) {
+      console.error('Failed to load locations for facility:', error)
+      setLocations([])
+    } finally {
+      setLoadingLocations(false)
+    }
+  }
 
   const onSubmit = async (data: AppointmentFormData) => {
     setLoading(true)
@@ -260,23 +300,63 @@ const ScheduleAppointmentModal: React.FC<ScheduleAppointmentModalProps> = ({
             </div>
           </div>
 
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <MapPin className="h-4 w-4 inline mr-1" />
-              Location (Optional)
-            </label>
-            <select
-              {...register('location')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select Location</option>
-              <option value="Virtual">Virtual</option>
-              <option value="Office A">Office A</option>
-              <option value="Office B">Office B</option>
-              <option value="Conference Room 1">Conference Room 1</option>
-              <option value="Conference Room 2">Conference Room 2</option>
-            </select>
+          {/* Facility and Location Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Building className="h-4 w-4 inline mr-1" />
+                Facility
+              </label>
+              <select
+                {...register('facility_id', { valueAsNumber: true })}
+                onChange={(e) => {
+                  const facilityId = parseInt(e.target.value)
+                  if (facilityId) {
+                    loadLocationsForFacility(facilityId)
+                  } else {
+                    setLocations([])
+                  }
+                  setValue('location_id', undefined)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Select Facility</option>
+                {loadingFacilities ? (
+                  <option value="" disabled>Loading facilities...</option>
+                ) : (
+                  facilities.map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="h-4 w-4 inline mr-1" />
+                Location
+              </label>
+              <select
+                {...register('location_id', { valueAsNumber: true })}
+                disabled={!watch('facility_id') || loadingLocations}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option value="">Select Location</option>
+                {loadingLocations ? (
+                  <option value="" disabled>Loading locations...</option>
+                ) : watch('facility_id') ? (
+                  locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name} {location.city && location.state ? `(${location.city}, ${location.state})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>Select a facility first</option>
+                )}
+              </select>
+            </div>
           </div>
 
           {/* Notes */}

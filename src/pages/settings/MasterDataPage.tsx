@@ -10,26 +10,43 @@ import {
   ChevronRight,
   Save,
   X,
-  Loader2
+  Loader2,
+  Shield,
+  FileText
 } from 'lucide-react'
 import masterDataService, { 
   MasterAllergy, 
   MasterMedicalProblem, 
   MasterMedication 
 } from '../../services/masterDataService'
+import prescriptionService, {
+  MasterUnit,
+  MasterRoute,
+  MasterInterval
+} from '../../services/prescriptionService'
+import insuranceService, {
+  InsuranceCompany
+} from '../../services/insuranceService'
+import {
+  DocumentType,
+  getDocumentTypes,
+  createDocumentType,
+  updateDocumentType,
+  deleteDocumentType
+} from '../../services/documentTypeService'
 
 interface MasterDataSection {
   title: string
   icon: React.ComponentType<any>
   color: string
-  type: 'allergies' | 'medical-problems' | 'medications'
+  type: 'allergies' | 'medical-problems' | 'medications' | 'units' | 'routes' | 'intervals' | 'insurance-companies' | 'document-types'
 }
 
 const MasterDataPage: React.FC = () => {
-  const [expandedSections, setExpandedSections] = useState<string[]>(['allergies', 'medical-problems', 'medications'])
-  const [editingItem, setEditingItem] = useState<string | null>(null)
-  const [editingValues, setEditingValues] = useState<{ name: string; description: string }>({ name: '', description: '' })
-  const [newItem, setNewItem] = useState<{ name: string; description: string }>({ name: '', description: '' })
+  const [expandedSections, setExpandedSections] = useState<string[]>(['allergies', 'medical-problems', 'medications', 'units', 'routes', 'intervals', 'insurance-companies', 'document-types'])
+  const [editingItem, setEditingItem] = useState<{ section: string; id: string } | null>(null)
+  const [editingValues, setEditingValues] = useState<{ name: string; description: string; code?: string; phone?: string }>({ name: '', description: '' })
+  const [newItem, setNewItem] = useState<{ name: string; description: string; code?: string; phone?: string }>({ name: '', description: '' })
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [loading, setLoading] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
@@ -38,6 +55,11 @@ const MasterDataPage: React.FC = () => {
   const [allergies, setAllergies] = useState<MasterAllergy[]>([])
   const [medicalProblems, setMedicalProblems] = useState<MasterMedicalProblem[]>([])
   const [medications, setMedications] = useState<MasterMedication[]>([])
+  const [units, setUnits] = useState<MasterUnit[]>([])
+  const [routes, setRoutes] = useState<MasterRoute[]>([])
+  const [intervals, setIntervals] = useState<MasterInterval[]>([])
+  const [insuranceCompanies, setInsuranceCompanies] = useState<InsuranceCompany[]>([])
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
 
   const masterData: Record<string, MasterDataSection> = {
     allergies: {
@@ -57,6 +79,36 @@ const MasterDataPage: React.FC = () => {
       icon: Pill,
       color: 'green',
       type: 'medications'
+    },
+    units: {
+      title: 'Units',
+      icon: Pill,
+      color: 'purple',
+      type: 'units'
+    },
+    routes: {
+      title: 'Routes',
+      icon: Pill,
+      color: 'orange',
+      type: 'routes'
+    },
+    intervals: {
+      title: 'Intervals',
+      icon: Pill,
+      color: 'teal',
+      type: 'intervals'
+    },
+    'insurance-companies': {
+      title: 'Insurance Companies',
+      icon: Shield,
+      color: 'indigo',
+      type: 'insurance-companies'
+    },
+    'document-types': {
+      title: 'Document Types',
+      icon: FileText,
+      color: 'cyan',
+      type: 'document-types'
     }
   }
 
@@ -65,6 +117,11 @@ const MasterDataPage: React.FC = () => {
     loadAllergies()
     loadMedicalProblems()
     loadMedications()
+    loadUnits()
+    loadRoutes()
+    loadIntervals()
+    loadInsuranceCompanies()
+    loadDocumentTypes()
   }, [])
 
   const loadAllergies = async () => {
@@ -103,6 +160,82 @@ const MasterDataPage: React.FC = () => {
       console.error('Error loading medications:', err)
     } finally {
       setLoading(prev => ({ ...prev, medications: false }))
+    }
+  }
+
+  const loadUnits = async () => {
+    setLoading(prev => ({ ...prev, units: true }))
+    try {
+      const response = await prescriptionService.getMasterUnits()
+      // Handle both paginated and direct array responses
+      const unitsData = response.data?.data || response.data || []
+      setUnits(unitsData)
+    } catch (err) {
+      setError('Failed to load units')
+      console.error('Error loading units:', err)
+      setUnits([])
+    } finally {
+      setLoading(prev => ({ ...prev, units: false }))
+    }
+  }
+
+  const loadRoutes = async () => {
+    setLoading(prev => ({ ...prev, routes: true }))
+    try {
+      const response = await prescriptionService.getMasterRoutes()
+      // Handle both paginated and direct array responses
+      const routesData = response.data?.data || response.data || []
+      setRoutes(routesData)
+    } catch (err) {
+      setError('Failed to load routes')
+      console.error('Error loading routes:', err)
+      setRoutes([])
+    } finally {
+      setLoading(prev => ({ ...prev, routes: false }))
+    }
+  }
+
+  const loadIntervals = async () => {
+    setLoading(prev => ({ ...prev, intervals: true }))
+    try {
+      const response = await prescriptionService.getMasterIntervals()
+      // Handle both paginated and direct array responses
+      const intervalsData = response.data?.data || response.data || []
+      setIntervals(intervalsData)
+    } catch (err) {
+      setError('Failed to load intervals')
+      console.error('Error loading intervals:', err)
+      setIntervals([])
+    } finally {
+      setLoading(prev => ({ ...prev, intervals: false }))
+    }
+  }
+
+  const loadInsuranceCompanies = async () => {
+    setLoading(prev => ({ ...prev, 'insurance-companies': true }))
+    try {
+      const response = await insuranceService.getInsuranceCompanies()
+      setInsuranceCompanies(response)
+    } catch (err) {
+      setError('Failed to load insurance companies')
+      console.error('Error loading insurance companies:', err)
+      setInsuranceCompanies([])
+    } finally {
+      setLoading(prev => ({ ...prev, 'insurance-companies': false }))
+    }
+  }
+
+  const loadDocumentTypes = async () => {
+    setLoading(prev => ({ ...prev, 'document-types': true }))
+    try {
+      const response = await getDocumentTypes()
+      setDocumentTypes(response)
+    } catch (err) {
+      setError('Failed to load document types')
+      console.error('Error loading document types:', err)
+      setDocumentTypes([])
+    } finally {
+      setLoading(prev => ({ ...prev, 'document-types': false }))
     }
   }
 
@@ -162,9 +295,57 @@ const MasterDataPage: React.FC = () => {
           })
           setMedications(prev => [...prev, response.data])
           break
+        case 'units':
+          response = await prescriptionService.createMasterUnit({
+            name: newItem.name,
+            code: newItem.name.toLowerCase().replace(/\s+/g, '-'),
+            description: newItem.description,
+            is_active: true
+          })
+          setUnits(prev => [...prev, response.data])
+          break
+        case 'routes':
+          response = await prescriptionService.createMasterRoute({
+            name: newItem.name,
+            code: newItem.name.toLowerCase().replace(/\s+/g, '-'),
+            description: newItem.description,
+            is_active: true
+          })
+          setRoutes(prev => [...prev, response.data])
+          break
+        case 'intervals':
+          response = await prescriptionService.createMasterInterval({
+            name: newItem.name,
+            code: newItem.name.toLowerCase().replace(/\s+/g, '-'),
+            description: newItem.description,
+            is_active: true
+          })
+          setIntervals(prev => [...prev, response.data])
+          break
+        case 'insurance-companies':
+          response = await insuranceService.createInsuranceCompany({
+            name: newItem.name,
+            code: newItem.code || newItem.name.toLowerCase().replace(/\s+/g, '-').substring(0, 50),
+            phone: newItem.phone,
+            notes: newItem.description,
+            is_active: true
+          })
+          setInsuranceCompanies(prev => [...prev, response])
+          break
+        case 'document-types':
+          response = await createDocumentType({
+            name: newItem.name,
+            code: newItem.code || newItem.name.toLowerCase().replace(/\s+/g, '-').substring(0, 50),
+            description: newItem.description,
+            icon: 'file-text',
+            color: 'blue',
+            is_active: true
+          })
+          setDocumentTypes(prev => [...prev, response])
+          break
       }
 
-      setNewItem({ name: '', description: '' })
+      setNewItem({ name: '', description: '', code: '', phone: '' })
       setActiveSection(null)
       setError(null)
     } catch (err) {
@@ -210,6 +391,49 @@ const MasterDataPage: React.FC = () => {
           })
           setMedications(prev => prev.map(item => item.id === itemId ? response.data : item))
           break
+        case 'units':
+          response = await prescriptionService.updateMasterUnit(itemId, {
+            name: updatedName,
+            code: updatedName.toLowerCase().replace(/\s+/g, '-'),
+            description: updatedDescription
+          })
+          setUnits(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'routes':
+          response = await prescriptionService.updateMasterRoute(itemId, {
+            name: updatedName,
+            code: updatedName.toLowerCase().replace(/\s+/g, '-'),
+            description: updatedDescription
+          })
+          setRoutes(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'intervals':
+          response = await prescriptionService.updateMasterInterval(itemId, {
+            name: updatedName,
+            code: updatedName.toLowerCase().replace(/\s+/g, '-'),
+            description: updatedDescription
+          })
+          setIntervals(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'insurance-companies':
+          response = await insuranceService.updateInsuranceCompany(itemId, {
+            name: updatedName,
+            code: editingValues.code || updatedName.toLowerCase().replace(/\s+/g, '-').substring(0, 50),
+            phone: editingValues.phone,
+            notes: updatedDescription
+          })
+          setInsuranceCompanies(prev => prev.map(item => item.id === itemId ? response : item))
+          break
+        case 'document-types':
+          response = await updateDocumentType(itemId, {
+            name: updatedName,
+            code: editingValues.code || updatedName.toLowerCase().replace(/\s+/g, '-').substring(0, 50),
+            description: updatedDescription,
+            icon: 'file-text',
+            color: 'blue'
+          })
+          setDocumentTypes(prev => prev.map(item => item.id === itemId ? response : item))
+          break
       }
 
       setEditingItem(null)
@@ -238,6 +462,26 @@ const MasterDataPage: React.FC = () => {
           await masterDataService.deleteMedication(itemId)
           setMedications(prev => prev.filter(item => item.id !== itemId))
           break
+        case 'units':
+          await prescriptionService.deleteMasterUnit(itemId)
+          setUnits(prev => prev.filter(item => item.id !== itemId))
+          break
+        case 'routes':
+          await prescriptionService.deleteMasterRoute(itemId)
+          setRoutes(prev => prev.filter(item => item.id !== itemId))
+          break
+        case 'intervals':
+          await prescriptionService.deleteMasterInterval(itemId)
+          setIntervals(prev => prev.filter(item => item.id !== itemId))
+          break
+        case 'insurance-companies':
+          await insuranceService.deleteInsuranceCompany(itemId)
+          setInsuranceCompanies(prev => prev.filter(item => item.id !== itemId))
+          break
+        case 'document-types':
+          await deleteDocumentType(itemId)
+          setDocumentTypes(prev => prev.filter(item => item.id !== itemId))
+          break
       }
     } catch (err) {
       setError('Failed to delete item')
@@ -263,6 +507,40 @@ const MasterDataPage: React.FC = () => {
           response = await masterDataService.toggleMedicationStatus(itemId)
           setMedications(prev => prev.map(item => item.id === itemId ? response.data : item))
           break
+        case 'units':
+          response = await prescriptionService.toggleMasterUnitStatus(itemId)
+          setUnits(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'routes':
+          response = await prescriptionService.toggleMasterRouteStatus(itemId)
+          setRoutes(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'intervals':
+          response = await prescriptionService.toggleMasterIntervalStatus(itemId)
+          setIntervals(prev => prev.map(item => item.id === itemId ? response.data : item))
+          break
+        case 'insurance-companies':
+          // For insurance companies, we'll update the is_active status directly
+          const currentItem = insuranceCompanies.find(item => item.id === itemId)
+          if (currentItem) {
+            response = await insuranceService.updateInsuranceCompany(itemId, {
+              ...currentItem,
+              is_active: !currentItem.is_active
+            })
+            setInsuranceCompanies(prev => prev.map(item => item.id === itemId ? response : item))
+          }
+          break
+        case 'document-types':
+          // For document types, we'll update the is_active status directly
+          const currentDocType = documentTypes.find(item => item.id === itemId)
+          if (currentDocType) {
+            response = await updateDocumentType(itemId, {
+              ...currentDocType,
+              is_active: !currentDocType.is_active
+            })
+            setDocumentTypes(prev => prev.map(item => item.id === itemId ? response : item))
+          }
+          break
       }
     } catch (err) {
       setError('Failed to toggle item status')
@@ -270,25 +548,40 @@ const MasterDataPage: React.FC = () => {
     }
   }
 
-  const startEditing = (item: any) => {
-    setEditingItem(item.id.toString())
-    setEditingValues({ name: item.name, description: item.description || '' })
+  const startEditing = (item: any, sectionKey: string) => {
+    setEditingItem({ section: sectionKey, id: item.id.toString() })
+    setEditingValues({ 
+      name: item.name, 
+      description: item.description || item.notes || '',
+      code: item.code || '',
+      phone: item.phone || ''
+    })
   }
 
   const cancelEditing = () => {
     setEditingItem(null)
-    setEditingValues({ name: '', description: '' })
+    setEditingValues({ name: '', description: '', code: '', phone: '' })
     setError(null)
   }
 
   const getItemsForSection = (sectionKey: string) => {
     switch (sectionKey) {
       case 'allergies':
-        return allergies
+        return allergies || []
       case 'medical-problems':
-        return medicalProblems
+        return medicalProblems || []
       case 'medications':
-        return medications
+        return medications || []
+      case 'units':
+        return units || []
+      case 'routes':
+        return routes || []
+      case 'intervals':
+        return intervals || []
+              case 'insurance-companies':
+          return insuranceCompanies
+        case 'document-types':
+          return documentTypes || []
       default:
         return []
     }
@@ -371,6 +664,26 @@ const MasterDataPage: React.FC = () => {
                               onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
+                            
+                            {/* Additional fields for insurance companies */}
+                            {sectionKey === 'insurance-companies' && (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Code (e.g., BCBS)"
+                                  value={newItem.code || ''}
+                                  onChange={(e) => setNewItem(prev => ({ ...prev, code: e.target.value }))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Phone (e.g., 1-800-123-4567)"
+                                  value={newItem.phone || ''}
+                                  onChange={(e) => setNewItem(prev => ({ ...prev, phone: e.target.value }))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </>
+                            )}
                             <div className="flex space-x-2">
                               <button
                                 onClick={() => handleAddItem(sectionKey)}
@@ -381,7 +694,7 @@ const MasterDataPage: React.FC = () => {
                               <button
                                 onClick={() => {
                                   setActiveSection(null)
-                                  setNewItem({ name: '', description: '' })
+                                  setNewItem({ name: '', description: '', code: '', phone: '' })
                                 }}
                                 className="px-3 py-2 bg-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                               >
@@ -395,7 +708,7 @@ const MasterDataPage: React.FC = () => {
                           <button
                             onClick={() => {
                               setActiveSection(sectionKey)
-                              setNewItem({ name: '', description: '' })
+                              setNewItem({ name: '', description: '', code: '', phone: '' })
                             }}
                             className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center space-x-2"
                           >
@@ -437,7 +750,7 @@ const MasterDataPage: React.FC = () => {
                                       {item.is_active ? 'Active' : 'Inactive'}
                                     </button>
                                     <button
-                                      onClick={() => startEditing(item)}
+                                      onClick={() => startEditing(item, sectionKey)}
                                       className="text-blue-600 hover:text-blue-900"
                                       title="Edit"
                                     >
@@ -454,11 +767,23 @@ const MasterDataPage: React.FC = () => {
                                 </div>
                                 
                                 <div className="text-xs text-gray-500">
-                                  {item.description || 'No description'}
+                                  {item.description || item.notes || 'No description'}
                                 </div>
+                                
+                                {/* Show code and phone for insurance companies */}
+                                {sectionKey === 'insurance-companies' && (
+                                  <div className="text-xs text-gray-400 mt-1 space-y-1">
+                                    {item.code && (
+                                      <div>Code: {item.code}</div>
+                                    )}
+                                    {item.phone && (
+                                      <div>Phone: {item.phone}</div>
+                                    )}
+                                  </div>
+                                )}
 
                                 {/* Edit Form - Hidden by default */}
-                                {editingItem === item.id.toString() && (
+                                {editingItem?.section === sectionKey && editingItem?.id === item.id.toString() && (
                                   <div className="mt-2 p-2 bg-gray-50 rounded-lg space-y-2">
                                     <input
                                       type="text"
@@ -474,6 +799,26 @@ const MasterDataPage: React.FC = () => {
                                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                       placeholder="Description"
                                     />
+                                    
+                                    {/* Additional fields for insurance companies */}
+                                    {sectionKey === 'insurance-companies' && (
+                                      <>
+                                        <input
+                                          type="text"
+                                          value={editingValues.code || ''}
+                                          onChange={(e) => setEditingValues(prev => ({ ...prev, code: e.target.value }))}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                          placeholder="Code (e.g., BCBS)"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={editingValues.phone || ''}
+                                          onChange={(e) => setEditingValues(prev => ({ ...prev, phone: e.target.value }))}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                          placeholder="Phone (e.g., 1-800-123-4567)"
+                                        />
+                                      </>
+                                    )}
                                     <div className="flex space-x-2">
                                       <button
                                         onClick={() => handleEditItem(sectionKey, item.id, editingValues.name, editingValues.description)}

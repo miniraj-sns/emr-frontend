@@ -12,7 +12,8 @@ import {
   FileImage,
   Shield,
   Pill,
-  Stethoscope
+  Stethoscope,
+  Activity
 } from 'lucide-react'
 import { RootState } from '../../store'
 import { fetchPatient, deletePatient } from '../../features/patients/patientSlice'
@@ -25,8 +26,10 @@ import {
   PatientNotes,
   PatientInsurance,
   PatientDocuments,
-  PatientPrescriptions
+  PatientPrescriptions,
+  PatientVitalSigns
 } from '../../components/patients'
+import PatientMedicalInfo from '../../components/patients/PatientMedicalInfo'
 
 const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -109,7 +112,8 @@ const PatientDetailPage: React.FC = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'timeline', label: 'Timeline', icon: Clock },
-    { id: 'medical', label: 'Medical History', icon: Stethoscope },
+    { id: 'medical', label: 'Medical Info', icon: Stethoscope },
+    { id: 'vitals', label: 'Vital Signs', icon: Activity },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'prescriptions', label: 'Prescriptions', icon: Pill },
     { id: 'notes', label: 'Notes', icon: MessageSquare },
@@ -191,7 +195,17 @@ const PatientDetailPage: React.FC = () => {
           )}
 
           {activeTab === 'medical' && (
-            <PatientMedicalHistory patient={currentPatient} />
+            <PatientMedicalInfo 
+              patient={currentPatient} 
+              onMedicalInfoUpdated={() => dispatch(fetchPatient(currentPatient.id))}
+            />
+          )}
+
+          {activeTab === 'vitals' && (
+            <PatientVitalSigns 
+              patient={currentPatient} 
+              onVitalSignsUpdated={() => dispatch(fetchPatient(currentPatient.id))}
+            />
           )}
 
           {activeTab === 'appointments' && (
@@ -216,7 +230,10 @@ const PatientDetailPage: React.FC = () => {
           )}
 
           {activeTab === 'insurance' && (
-            <PatientInsurance patient={currentPatient} />
+            <PatientInsurance 
+              patient={currentPatient} 
+              onInsuranceUpdated={() => dispatch(fetchPatient(currentPatient.id))}
+            />
           )}
 
           {activeTab === 'documents' && (

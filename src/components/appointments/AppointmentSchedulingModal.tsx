@@ -15,13 +15,16 @@ import {
   Repeat,
   Trash2,
   Save,
-  Share2
+  Share2,
+  Building
 } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState, AppDispatch } from '../../store'
 import { appointmentService } from '../../services/appointmentService'
 import { fetchAppointments } from '../../features/appointments/appointmentsSlice'
 import { fetchPatients } from '../../features/patients/patientSlice'
+import { facilityService, Facility } from '../../services/facilityService'
+import { locationService, Location } from '../../services/locationService'
 
 // Form validation schema
 const appointmentSchema = z.object({
@@ -35,7 +38,8 @@ const appointmentSchema = z.object({
   type: z.enum(['consultation', 'therapy', 'follow_up', 'coaching', 'onboarding', 'support'], {
     required_error: 'Appointment type is required'
   }),
-  location: z.string().optional(),
+  facility_id: z.number().optional(),
+  location_id: z.number().optional(),
   notes: z.string().optional(),
   is_all_day: z.boolean().default(false),
   is_recurring: z.boolean().default(false),
@@ -70,6 +74,10 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
   const [isRecurring, setIsRecurring] = useState(false)
   const [duration, setDuration] = useState(30)
   const [showShareOptions, setShowShareOptions] = useState(false)
+  const [facilities, setFacilities] = useState<Facility[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loadingFacilities, setLoadingFacilities] = useState(false)
+  const [loadingLocations, setLoadingLocations] = useState(false)
 
   const {
     register,
@@ -83,7 +91,6 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
     defaultValues: {
       type: 'consultation',
       duration_minutes: 30,
-      location: 'In-Person',
       is_all_day: false,
       is_recurring: false,
       fee: 0,
@@ -100,6 +107,42 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
     }
   }, [isOpen, dispatch])
 
+  // Load facilities when modal opens
+  useEffect(() => {
+    const loadFacilities = async () => {
+      try {
+        setLoadingFacilities(true)
+        const response = await facilityService.getFacilities({ status: 'active' })
+        setFacilities(response.facilities)
+      } catch (error) {
+        console.error('Failed to load facilities:', error)
+      } finally {
+        setLoadingFacilities(false)
+      }
+    }
+
+    if (isOpen) {
+      loadFacilities()
+    }
+  }, [isOpen])
+
+  // Load locations when facility changes
+  const loadLocationsForFacility = async (facilityId: number) => {
+    try {
+      console.log('Loading locations for facility:', facilityId)
+      setLoadingLocations(true)
+      const response = await appointmentService.getFacilityLocations(facilityId)
+      console.log('Locations response:', response)
+      setLocations(response.locations)
+      console.log('Set locations:', response.locations)
+    } catch (error) {
+      console.error('Failed to load locations for facility:', error)
+      setLocations([])
+    } finally {
+      setLoadingLocations(false)
+    }
+  }
+
   useEffect(() => {
     if (isOpen) {
       if (selectedEvent) {
@@ -112,10 +155,16 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
         setValue('start_time', eventDate.toTimeString().slice(0, 5))
         setValue('duration_minutes', selectedEvent.duration_minutes || 30)
         setValue('type', selectedEvent.type)
-        setValue('location', selectedEvent.location)
+        setValue('facility_id', selectedEvent.facility_id)
+        setValue('location_id', selectedEvent.location_id)
         setValue('notes', selectedEvent.notes)
         setValue('fee', selectedEvent.fee || 0)
         setDuration(selectedEvent.duration_minutes || 30)
+        
+        // Load locations if facility is set
+        if (selectedEvent.facility_id) {
+          loadLocationsForFacility(selectedEvent.facility_id)
+        }
              } else if (selectedDate) {
          // Create new appointment
          setValue('scheduled_at', selectedDate.toISOString().split('T')[0])
@@ -410,19 +459,71 @@ const AppointmentSchedulingModal: React.FC<AppointmentSchedulingModalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              {/* Facility and Location Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Debug Info */}
+                <div className="col-span-2 mb-2 p-2 bg-blue-50 rounded text-xs">
+                  <p>Debug: Facility ID: {watch('facility_id') || 'none'}, Locations: {locations.length}, Loading: {loadingLocations ? 'yes' : 'no'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Building className="h-4 w-4 inline mr-1" />
+                    Facility
+                  </label>
                   <select
-                    {...register('location')}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    {...register('facility_id', { valueAsNumber: true })}
+                    onChange={(e) => {
+                      console.log('Facility dropdown changed:', e.target.value)
+                      const facilityId = parseInt(e.target.value)
+                      console.log('Parsed facility ID:', facilityId)
+                      if (facilityId) {
+                        loadLocationsForFacility(facilityId)
+                      } else {
+                        setLocations([])
+                      }
+                      setValue('location_id', undefined)
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="In-Person">In-Person</option>
-                    <option value="Telehealth">Telehealth Visit</option>
-                    <option value="Phone">Phone Call</option>
+                    <option value="">Select Facility</option>
+                    {loadingFacilities ? (
+                      <option value="" disabled>Loading facilities...</option>
+                    ) : (
+                      facilities.map((facility) => (
+                        <option key={facility.id} value={facility.id}>
+                          {facility.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <MapPin className="h-4 w-4 inline mr-1" />
+                    Location
+                  </label>
+                  <select
+                    {...register('location_id', { valueAsNumber: true })}
+                    disabled={!watch('facility_id') || loadingLocations}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select Location</option>
+                    {loadingLocations ? (
+                      <option value="" disabled>Loading locations...</option>
+                    ) : watch('facility_id') ? (
+                      (() => {
+                        console.log('Rendering locations dropdown. Locations:', locations)
+                        console.log('Watch facility_id:', watch('facility_id'))
+                        return locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.name} {location.city && location.state ? `(${location.city}, ${location.state})` : ''}
+                          </option>
+                        ))
+                      })()
+                    ) : (
+                      <option value="" disabled>Select a facility first</option>
+                    )}
                   </select>
                 </div>
               </div>

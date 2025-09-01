@@ -31,9 +31,21 @@ import patientMasterDataService, {
   UpdatePatientMedicalProblemRequest,
   UpdatePatientMedicationRequest
 } from '../../services/patientMasterDataService'
+import prescriptionService, {
+  Prescription,
+  CreatePrescriptionRequest,
+  UpdatePrescriptionRequest
+} from '../../services/prescriptionService'
+import vitalSignsService, {
+  VitalSigns,
+  CreateVitalSignsRequest,
+  UpdateVitalSignsRequest
+} from '../../services/vitalSignsService'
 import AllergyModal from './AllergyModal'
 import MedicalProblemModal from './MedicalProblemModal'
 import MedicationModal from './MedicationModal'
+import PrescriptionModal from './PrescriptionModal'
+import VitalSignsModal from './VitalSignsModal'
 
 interface PatientOverviewProps {
   patient: Patient
@@ -44,6 +56,8 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
   const [patientAllergies, setPatientAllergies] = useState<PatientAllergy[]>([])
   const [patientMedicalProblems, setPatientMedicalProblems] = useState<PatientMedicalProblem[]>([])
   const [patientMedications, setPatientMedications] = useState<PatientMedication[]>([])
+  const [patientPrescriptions, setPatientPrescriptions] = useState<Prescription[]>([])
+  const [patientVitalSigns, setPatientVitalSigns] = useState<VitalSigns[]>([])
   
   // Loading and error states
   const [loading, setLoading] = useState(false)
@@ -68,6 +82,18 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
     medication: null as PatientMedication | null
   })
 
+  const [prescriptionModal, setPrescriptionModal] = useState({
+    isOpen: false,
+    mode: 'add' as 'add' | 'edit',
+    prescription: null as Prescription | null
+  })
+
+  const [vitalSignsModal, setVitalSignsModal] = useState({
+    isOpen: false,
+    mode: 'add' as 'add' | 'edit',
+    vitalSigns: null as VitalSigns | null
+  })
+
   // Load patient data when patient changes
   useEffect(() => {
     if (patient.id) {
@@ -80,15 +106,19 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
     setError(null)
     
     try {
-      const [allergiesRes, medicalProblemsRes, medicationsRes] = await Promise.all([
+      const [allergiesRes, medicalProblemsRes, medicationsRes, prescriptionsRes, vitalSignsRes] = await Promise.all([
         patientMasterDataService.getPatientAllergies(patient.id),
         patientMasterDataService.getPatientMedicalProblems(patient.id),
-        patientMasterDataService.getPatientMedications(patient.id)
+        patientMasterDataService.getPatientMedications(patient.id),
+        prescriptionService.getPatientPrescriptions(patient.id),
+        vitalSignsService.getPatientVitalSigns(patient.id)
       ])
 
       setPatientAllergies(allergiesRes.data || [])
       setPatientMedicalProblems(medicalProblemsRes.data || [])
       setPatientMedications(medicationsRes.data || [])
+      setPatientPrescriptions(prescriptionsRes.data || [])
+      setPatientVitalSigns(vitalSignsRes.vital_signs || [])
     } catch (err) {
       console.error('Error loading patient data:', err)
       setError('Failed to load patient data')
@@ -256,6 +286,102 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
     }
   }
 
+  // Prescription handlers
+  const handleAddPrescription = () => {
+    setPrescriptionModal({
+      isOpen: true,
+      mode: 'add',
+      prescription: null
+    })
+  }
+
+  const handleEditPrescription = (prescription: Prescription) => {
+    setPrescriptionModal({
+      isOpen: true,
+      mode: 'edit',
+      prescription
+    })
+  }
+
+  const handleSavePrescription = async (data: CreatePrescriptionRequest | UpdatePrescriptionRequest) => {
+    try {
+      if (prescriptionModal.mode === 'add') {
+        await prescriptionService.createPrescription(patient.id, data as CreatePrescriptionRequest)
+      } else {
+        await prescriptionService.updatePrescription(patient.id, prescriptionModal.prescription!.id, data as UpdatePrescriptionRequest)
+      }
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error saving prescription:', err)
+      throw err
+    }
+  }
+
+  const handleDeletePrescription = async (prescriptionId: number) => {
+    if (!confirm('Are you sure you want to delete this prescription?')) return
+    
+    try {
+      await prescriptionService.deletePrescription(patient.id, prescriptionId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error deleting prescription:', err)
+      setError('Failed to delete prescription')
+    }
+  }
+
+  const handleTogglePrescriptionStatus = async (prescriptionId: number) => {
+    try {
+      await prescriptionService.togglePrescriptionStatus(patient.id, prescriptionId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error toggling prescription status:', err)
+      setError('Failed to update prescription status')
+    }
+  }
+
+  // Vital Signs handlers
+  const handleAddVitalSigns = () => {
+    setVitalSignsModal({
+      isOpen: true,
+      mode: 'add',
+      vitalSigns: null
+    })
+  }
+
+  const handleEditVitalSigns = (vitalSigns: VitalSigns) => {
+    setVitalSignsModal({
+      isOpen: true,
+      mode: 'edit',
+      vitalSigns
+    })
+  }
+
+  const handleSaveVitalSigns = async (data: CreateVitalSignsRequest | UpdateVitalSignsRequest) => {
+    try {
+      if (vitalSignsModal.mode === 'add') {
+        await vitalSignsService.createVitalSigns(patient.id, data as CreateVitalSignsRequest)
+      } else {
+        await vitalSignsService.updateVitalSigns(patient.id, vitalSignsModal.vitalSigns!.id, data as UpdateVitalSignsRequest)
+      }
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error saving vital signs:', err)
+      throw err
+    }
+  }
+
+  const handleDeleteVitalSigns = async (vitalSignsId: number) => {
+    if (!confirm('Are you sure you want to delete this vital signs record?')) return
+    
+    try {
+      await vitalSignsService.deleteVitalSigns(patient.id, vitalSignsId)
+      await loadPatientData()
+    } catch (err) {
+      console.error('Error deleting vital signs:', err)
+      setError('Failed to delete vital signs record')
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800', label: 'Active' },
@@ -305,7 +431,7 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
   }
 
   // Get latest vital signs
-  const latestVitals = patient?.vital_signs?.[0]
+  const latestVitals = patientVitalSigns[0]
   
   // Get active and discontinued medications from patient data
   const activeMedications = patient?.medications?.filter((med: any) => med?.status === 'active') || []
@@ -475,15 +601,26 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
       <div className="space-y-1 lg:col-span-3 bg-orange-50 rounded-lg p-1">
         {/* Vital Signs - Compact */}
         <div className="bg-white rounded-lg p-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
               <Heart className="h-5 w-5 mr-2" />
               Vital Signs
-            </div>
+            </h2>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-5 px-1"
+              onClick={handleAddVitalSigns}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add
+            </Button>
+          </div>
+          <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-normal text-gray-500">
-              ({new Date(latestVitals?.updated_at || patient.updated_at).toLocaleDateString()})
+              Latest: {latestVitals ? new Date(latestVitals.recorded_at).toLocaleDateString() : 'No data'}
             </span>
-          </h2>
+          </div>
           <div className="grid grid-cols-2 gap-1">
             <div className="text-center">
               <Ruler className="h-4 w-4 text-blue-500 mx-auto mb-1" />
@@ -516,6 +653,50 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
               <p className="text-xs text-gray-500">HR</p>
             </div>
           </div>
+          
+          {/* Vital Signs History */}
+          {patientVitalSigns.length > 1 && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">History</h3>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {patientVitalSigns.slice(1, 4).map((vitalSigns) => (
+                  <div key={vitalSigns.id} className="flex items-center justify-between p-1 bg-gray-50 rounded border border-gray-200 text-xs">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        {new Date(vitalSigns.recorded_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-gray-600">
+                        BP: {vitalSigns.blood_pressure_systolic && vitalSigns.blood_pressure_diastolic 
+                          ? `${vitalSigns.blood_pressure_systolic}/${vitalSigns.blood_pressure_diastolic}` 
+                          : 'N/A'} | 
+                        Temp: {vitalSigns.temperature || 'N/A'} | 
+                        HR: {vitalSigns.heart_rate || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleEditVitalSigns(vitalSigns)}
+                        className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteVitalSigns(vitalSigns.id)}
+                        className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {patientVitalSigns.length > 4 && (
+                  <p className="text-xs text-gray-500 text-center">+{patientVitalSigns.length - 4} more records</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Upcoming Appointments */}
@@ -579,8 +760,8 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
                       <div className="flex items-center space-x-1 mt-1">
                         <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${getStatusColor(medication.status)}`}>
                           {medication.status}
-                        </span>
-                      </div>
+                </span>
+              </div>
                     </div>
                     <div className="flex items-center space-x-1">
                       <button
@@ -645,7 +826,7 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
                         <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(allergy.severity)}`}>
                   {allergy.severity}
                 </span>
-                      </div>
+              </div>
                     </div>
                     <div className="flex items-center space-x-1">
                       <button
@@ -744,6 +925,68 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
             )}
           </div>
         </div>
+
+        {/* Prescriptions */}
+        <div className="bg-white rounded-lg p-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-md font-semibold text-gray-900 flex items-center">
+              <FileText className="h-4 w-4 mr-2 text-green-500" />
+              Prescriptions
+            </h3>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-5 px-1"
+              onClick={handleAddPrescription}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add
+            </Button>
+          </div>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {patientPrescriptions.length > 0 ? (
+              patientPrescriptions.slice(0, 3).map((prescription) => (
+                <div key={prescription.id} className="flex items-center justify-between p-1 bg-green-50 rounded border border-green-200 text-sm">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      {prescription.drug_name} - {prescription.quantity} - Qty: {prescription.quantity} - Route: {prescription.route?.name || prescription.route_id} - Interval: {prescription.interval?.name || prescription.interval_id}
+                    </p>
+                    {prescription.directions && (
+                      <p className="text-xs text-gray-600">{prescription.directions}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => handleEditPrescription(prescription)}
+                      className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => handleTogglePrescriptionStatus(prescription.id)}
+                      className={`px-1 py-0.5 text-xs rounded ${prescription.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                    >
+                      {prescription.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={() => handleDeletePrescription(prescription.id)}
+                      className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-2">No prescriptions recorded</p>
+            )}
+            {patientPrescriptions.length > 3 && (
+              <p className="text-xs text-gray-500 text-center">+{patientPrescriptions.length - 3} more</p>
+            )}
+          </div>
+        </div>
       </div>
       </div>
 
@@ -773,6 +1016,24 @@ const PatientOverview: React.FC<PatientOverviewProps> = ({ patient }) => {
         medication={medicationModal.medication}
         onSave={handleSaveMedication}
         mode={medicationModal.mode}
+      />
+
+      <PrescriptionModal
+        isOpen={prescriptionModal.isOpen}
+        onClose={() => setPrescriptionModal({ isOpen: false, mode: 'add', prescription: null })}
+        patientId={patient.id}
+        prescription={prescriptionModal.prescription}
+        onSave={handleSavePrescription}
+        mode={prescriptionModal.mode}
+      />
+
+      <VitalSignsModal
+        isOpen={vitalSignsModal.isOpen}
+        onClose={() => setVitalSignsModal({ isOpen: false, mode: 'add', vitalSigns: null })}
+        patientId={patient.id}
+        vitalSigns={vitalSignsModal.vitalSigns}
+        onSave={handleSaveVitalSigns}
+        mode={vitalSignsModal.mode}
       />
     </div>
   )
