@@ -3,3 +3,7 @@ Client Secret ..................... 1GBHurnSCt0BrtXGcGE1yGXkP8rOATtMH9p87IH5
 
 Client ID ............................. 0198c150-7857-7054-bb82-43042e21775f  
 Client Secret ..................... OqUtjZMU5Sl9LZo0ag2ULncFoYLJDgB8M9bSnxuF  
+
+
+Client ID ............................. 019909ad-ea74-734f-a673-ae4864d0c753  
+Client Secret ..................... TRKzZgdlXijOtS900g3k3kQuwWwMwzpXJBLPnvUT

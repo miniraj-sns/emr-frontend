@@ -12,25 +12,21 @@ import {
   FileImage,
   Shield,
   Pill,
-  Stethoscope,
-  Activity
+  Stethoscope
 } from 'lucide-react'
 import { RootState } from '../../store'
 import { fetchPatient, deletePatient } from '../../features/patients/patientSlice'
 import Button from '../../components/ui/Button'
 import {
   PatientOverview,
-  PatientOverview2,
   PatientTimeline,
   PatientMedicalHistory,
   PatientAppointments,
   PatientNotes,
   PatientInsurance,
   PatientDocuments,
-  PatientPrescriptions,
-  PatientVitalSigns
+  PatientPrescriptions
 } from '../../components/patients'
-import PatientMedicalInfo from '../../components/patients/PatientMedicalInfo'
 
 const PatientDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -112,10 +108,8 @@ const PatientDetailPage: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
-    { id: 'overview2', label: 'Overview 2', icon: User },
     { id: 'timeline', label: 'Timeline', icon: Clock },
-    { id: 'medical', label: 'Medical Info', icon: Stethoscope },
-    { id: 'vitals', label: 'Vital Signs', icon: Activity },
+    { id: 'medical', label: 'Medical History', icon: Stethoscope },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'prescriptions', label: 'Prescriptions', icon: Pill },
     { id: 'notes', label: 'Notes', icon: MessageSquare },
@@ -128,7 +122,7 @@ const PatientDetailPage: React.FC = () => {
       {/* Header */}
       <div className="space-y-1">
         {/* First Row - Patient Name and Action Buttons */}
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Link to="/patients" className="text-gray-500 hover:text-gray-700">
               <ArrowLeft className="h-4 w-4" />
@@ -159,11 +153,14 @@ const PatientDetailPage: React.FC = () => {
               {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
-        </div>
+        </div> */}
         
         {/* Second Row - Tabs */}
         <div className="bg-white rounded-lg shadow">
           <nav className="flex space-x-3 px-3 py-1">
+            <Link to="/patients" className="text-gray-500 hover:text-gray-700 mt-2">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -191,26 +188,13 @@ const PatientDetailPage: React.FC = () => {
           {activeTab === 'overview' && (
             <PatientOverview patient={currentPatient} />
           )}
-          {activeTab === 'overview2' && (
-            <PatientOverview2 patient={currentPatient} />
-          )}
 
           {activeTab === 'timeline' && (
             <PatientTimeline patientId={currentPatient.id} />
           )}
 
           {activeTab === 'medical' && (
-            <PatientMedicalInfo 
-              patient={currentPatient} 
-              onMedicalInfoUpdated={() => dispatch(fetchPatient(currentPatient.id))}
-            />
-          )}
-
-          {activeTab === 'vitals' && (
-            <PatientVitalSigns 
-              patient={currentPatient} 
-              onVitalSignsUpdated={() => dispatch(fetchPatient(currentPatient.id))}
-            />
+            <PatientMedicalHistory patient={currentPatient} />
           )}
 
           {activeTab === 'appointments' && (
@@ -235,10 +219,7 @@ const PatientDetailPage: React.FC = () => {
           )}
 
           {activeTab === 'insurance' && (
-            <PatientInsurance 
-              patient={currentPatient} 
-              onInsuranceUpdated={() => dispatch(fetchPatient(currentPatient.id))}
-            />
+            <PatientInsurance patient={currentPatient} />
           )}
 
           {activeTab === 'documents' && (

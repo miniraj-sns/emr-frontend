@@ -18,6 +18,7 @@ import MasterDataPage from './pages/settings/MasterDataPage'
 import FacilityManagementPage from './pages/settings/FacilityManagementPage'
 import LocationManagementPage from './pages/settings/LocationManagementPage'
 import AppointmentDemoPage from './pages/appointments/AppointmentDemoPage'
+import DemoPage from './pages/demo-page/DemoPage'
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -272,6 +273,17 @@ const App: React.FC = () => {
                   <ProtectedRoute>
                     <Layout>
                       <AppointmentDemoPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Appointment Demo */}
+              <Route
+                path="/test-demo"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DemoPage />
                     </Layout>
                   </ProtectedRoute>
                 }

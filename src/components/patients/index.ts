@@ -1,4 +1,5 @@
 export { default as PatientOverview } from './PatientOverview'
+export { default as PatientOverview2 } from './PatientOverview2'
 export { default as PatientTimeline } from './PatientTimeline'
 export { default as PatientMedicalHistory } from './PatientMedicalHistory'
 export { default as PatientMedicalInfo } from './PatientMedicalInfo'
