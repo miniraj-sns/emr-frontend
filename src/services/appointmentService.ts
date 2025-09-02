@@ -131,5 +131,18 @@ export const appointmentService = {
   async getFacilityLocations(facilityId: number): Promise<{ locations: Location[] }> {
     const response = await apiClient.get(`/facilities/${facilityId}/locations`)
     return response.data
+  },
+
+  // Check for appointment conflicts
+  async checkConflict(conflictData: {
+    scheduled_at: string
+    end_time: string
+    facility_id?: number
+    location_id?: number
+    provider_id?: number
+    appointment_id?: number
+  }): Promise<{ hasConflict: boolean; conflictingAppointments?: Appointment[] }> {
+    const response = await apiClient.post('/appointments/check-conflict', conflictData)
+    return response.data
   }
 }
