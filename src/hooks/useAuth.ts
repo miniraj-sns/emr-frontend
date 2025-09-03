@@ -25,7 +25,11 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Always dispatch logout action to clear Redux state
       dispatch(logoutAction());
+      // Force clear any remaining localStorage items
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_data');
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { RootState } from '../../store'
 import { toggleSidebar } from '../../features/ui/uiSlice'
 import { useAuth } from '../../hooks/useAuth'
@@ -19,7 +20,8 @@ import LayoutSwitcher from './LayoutSwitcher'
 
 const Header: React.FC = () => {
   const dispatch = useDispatch()
-  const { user } = useSelector((state: RootState) => state.auth)
+  const navigate = useNavigate()
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
   const { sidebar, layout } = useSelector((state: RootState) => state.ui)
   const { logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -55,9 +57,25 @@ const Header: React.FC = () => {
     }
   }, [])
 
+  // Handle authentication state changes
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Close any open menus
+      setShowUserMenu(false)
+      setShowNotifications(false)
+      setShowSearchPopup(false)
+      // Redirect to login if not authenticated
+      navigate('/login')
+    }
+  }, [isAuthenticated, navigate])
+
   const handleLogout = async () => {
     try {
       await logout()
+      // Close the user menu
+      setShowUserMenu(false)
+      // Redirect to login page
+      navigate('/login')
     } catch (error) {
       console.error('Logout error:', error)
     }
