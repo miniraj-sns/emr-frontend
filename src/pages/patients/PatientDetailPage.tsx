@@ -20,7 +20,7 @@ import { fetchPatient, deletePatient } from '../../features/patients/patientSlic
 import Button from '../../components/ui/Button'
 import {
   PatientOverview,
-  PatientOverview2,
+  PatientOverview2Dynamic,
   PatientTimeline,
   PatientMedicalHistory,
   PatientAppointments,
@@ -192,7 +192,7 @@ const PatientDetailPage: React.FC = () => {
             <PatientOverview patient={currentPatient} />
           )}
           {activeTab === 'overview2' && (
-            <PatientOverview2 patient={currentPatient} />
+            <PatientOverview2Dynamic patient={currentPatient} />
           )}
 
           {activeTab === 'timeline' && (

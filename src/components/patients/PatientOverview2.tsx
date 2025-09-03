@@ -427,25 +427,37 @@ const PatientOverview2: React.FC<PatientOverviewProps> = ({ patient }) => {
         <div className="bg-white rounded-lg p-4 border">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Doctors</h3>
           <div className="space-y-3">
-            <div className="bg-orange-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-orange-700 font-medium">Primary</p>
-                  <p className="text-sm font-semibold text-gray-900">Dr. Grant, 0012</p>
+            {patient.referring_provider && (
+              <div className="bg-orange-100 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-orange-700 font-medium">Primary</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {patient.referring_provider.first_name} {patient.referring_provider.last_name}
+                    </p>
+                  </div>
+                  <UserCheck className="h-4 w-4 text-orange-600" />
                 </div>
-                <UserCheck className="h-4 w-4 text-orange-600" />
               </div>
-            </div>
-            <div className="bg-blue-100 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-blue-700 font-medium">On Record</p>
-                  <p className="text-sm font-semibold text-gray-900">Dr. Emma, 0056</p>
-                  <p className="text-sm font-semibold text-gray-900">Dr. Alexis, 0069</p>
+            )}
+            {patient.assigned_coach && (
+              <div className="bg-blue-100 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-700 font-medium">Assigned Coach</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {patient.assigned_coach.first_name} {patient.assigned_coach.last_name}
+                    </p>
+                  </div>
+                  <Users className="h-4 w-4 text-blue-600" />
                 </div>
-                <Users className="h-4 w-4 text-blue-600" />
               </div>
-            </div>
+            )}
+            {!patient.referring_provider && !patient.assigned_coach && (
+              <div className="text-center text-gray-500 text-sm py-4">
+                No doctors assigned
+              </div>
+            )}
           </div>
         </div>
       </div>
