@@ -310,3 +310,4 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ patientId, onSubmit, 
 };
 
 export default AppointmentForm;
+
