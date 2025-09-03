@@ -4,37 +4,21 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
 import { toggleSidebar } from '../../features/ui/uiSlice'
 import { 
-  LayoutDashboard,
-  Users,
-  Calendar,
-  Building2,
-  Package,
-  BarChart3,
-  Settings,
-  FileText,
-  MessageSquare,
-  HelpCircle,
   ChevronRight,
   ChevronDown,
   X
 } from 'lucide-react'
+import { getMenuItemsForLayout } from './menuItems'
 
 interface SidebarProps {
   isOpen: boolean
 }
 
-interface MenuItem {
-  name: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  badge?: string
-  children?: MenuItem[]
-}
+import { MenuItem } from './menuItems'
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const dispatch = useDispatch()
   const location = useLocation()
-  const { user } = useSelector((state: RootState) => state.auth)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
 
   // Debug logging
@@ -54,6 +38,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   }
 
   const isActive = (href: string) => {
+    // Safety check for undefined href
+    if (!href) {
+      console.warn('Sidebar: href is undefined for menu item')
+      return false
+    }
+    
     // Special case for dashboard - highlight when on /dashboard
     if (href === '/dashboard') {
       return location.pathname === '/dashboard'
@@ -79,90 +69,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     return expandedMenus.includes(menuName)
   }
 
-  const menuItems: MenuItem[] = [
-    {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: LayoutDashboard
-    },
-    {
-      name: 'Patients',
-      href: '/patients',
-      icon: Users,
-      children: [
-        { name: 'All Patients', href: '/patients', icon: Users },
-        { name: 'Forms', href: '/patients/forms', icon: FileText }
-      ]
-    },
-    {
-      name: 'Appointments',
-      href: '/appointments',
-      icon: Calendar,
-      children: [
-        { name: 'All Appointments', href: '/appointments', icon: Calendar },
-        { name: 'Calendar', href: '/appointments/calendar', icon: Calendar },
-        { name: 'Video Sessions', href: '/appointments/video', icon: MessageSquare },
-        { name: 'Schedule', href: '/appointments/schedule', icon: Calendar }
-      ]
-    },
-    {
-      name: 'CRM',
-      href: '/crm',
-      icon: Building2,
-      children: [
-        { name: 'Dashboard', href: '/crm', icon: LayoutDashboard },
-        { name: 'Leads', href: '/crm/leads', icon: Users },
-        { name: 'Contacts', href: '/crm/contacts', icon: Users },
-        { name: 'Opportunities', href: '/crm/opportunities', icon: Building2 },
-        { name: 'Follow-ups', href: '/crm/followups', icon: Calendar }
-      ]
-    },
-    {
-      name: 'Clinic',
-      href: '/clinic',
-      icon: Building2,
-      children: [
-        { name: 'Facilities', href: '/facilities', icon: Building2 },
-        { name: 'Locations', href: '/locations', icon: Building2 }
-      ]
-    },
-    {
-      name: 'Inventory',
-      href: '/inventory',
-      icon: Package,
-      children: [
-        { name: 'Devices', href: '/inventory/devices', icon: Package },
-        { name: 'Shipments', href: '/inventory/shipments', icon: Package },
-        { name: 'Returns', href: '/inventory/returns', icon: Package }
-      ]
-    },
-    {
-      name: 'Reports',
-      href: '/reports',
-      icon: BarChart3,
-      children: [
-        { name: 'Patient Reports', href: '/reports/patients', icon: FileText },
-        { name: 'Analytics', href: '/reports/analytics', icon: BarChart3 },
-        { name: 'Billing', href: '/reports/billing', icon: BarChart3 }
-      ]
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      children: [
-        { name: 'Users & Roles', href: '/settings/users', icon: Users },
-        { name: 'System Settings', href: '/settings/system', icon: Settings },
-        { name: 'Master Data', href: '/settings/master-data', icon: Settings },
-        { name: 'Help Desk', href: '/settings/help-desk', icon: HelpCircle }
-      ]
-    }
-  ]
+  const menuItems = getMenuItemsForLayout('sidebar')
+  
+  // Debug logging to see what we're getting
+  console.log('Sidebar menuItems:', menuItems)
+  console.log('First item href:', menuItems[0]?.href)
 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0
     const isExpanded = isMenuExpanded(item.name)
-    const active = isActive(item.href)
+    const active = isActive(item.href || '')
     
     return (
       <div key={item.name}>
@@ -200,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </div>
         ) : (
           <Link
-            to={item.href}
+            to={item.href || '#'}
             className={`flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors ${
               active
                 ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-600'
@@ -243,30 +159,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         
         
 
-        {/* User info */}
-        <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
-          {/* Mobile close button */}
+        {/* Mobile close button only */}
+        <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0 lg:hidden">
           <button 
             onClick={handleMobileClose}
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+            className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
           >
             <X className="h-6 w-6" />
           </button>
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
-                {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
-              </span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">
-                {user?.first_name} {user?.last_name}
-              </p>
-              <p className="text-xs text-gray-500">
-                {user?.roles?.join(', ') || 'User'}
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Navigation - Scrollable and flexible */}
