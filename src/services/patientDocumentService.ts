@@ -17,6 +17,25 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+// User interface for uploaded_by field
+export interface User {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  email_verified_at?: string
+  phone?: string
+  pay_rate?: number
+  avatar?: string
+  bio?: string
+  settings?: any
+  is_active: boolean
+  last_login_at?: string
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
 // Patient Document Types
 export interface PatientDocument {
   id: number
@@ -28,12 +47,13 @@ export interface PatientDocument {
   mime_type: string
   file_size: number
   description?: string
-  uploaded_by?: string
+  uploaded_by?: string | User
   status: 'active' | 'archived' | 'deleted'
   uploaded_at: string
   created_at: string
   updated_at: string
   document_type?: DocumentType
+  uploadedBy?: User
   file_size_formatted?: string
   file_icon?: string
 }

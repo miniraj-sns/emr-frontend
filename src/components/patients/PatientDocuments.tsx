@@ -53,6 +53,20 @@ interface PatientDocumentsProps {
 }
 
 const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocumentsUpdated }) => {
+  // Safety check for patient prop
+  if (!patient || !patient.id) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-8">
+            <FileImage className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Patient information not available</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const [documents, setDocuments] = useState<PatientDocument[]>([])
   const [categories, setCategories] = useState<DocumentCategory[]>([])
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([])
@@ -75,14 +89,21 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Load documents and categories
   const loadDocuments = async () => {
+    if (!patient || !patient.id) {
+      console.warn('Cannot load documents: patient or patient.id is undefined')
+      return
+    }
+    
     try {
       setLoading(true)
       const response = await getPatientDocuments(patient.id, { type: filterType === 'all' ? undefined : filterType })
-      setDocuments(response.documents)
-      setCategories(response.categories)
+      setDocuments(response.documents || [])
+      setCategories(response.categories || [])
     } catch (err) {
       console.error('Error loading documents:', err)
       setError('Failed to load documents')
+      setDocuments([])
+      setCategories([])
     } finally {
       setLoading(false)
     }
@@ -92,16 +113,24 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
   const loadDocumentTypes = async () => {
     try {
       const types = await getDocumentTypes({ active: true })
-      setDocumentTypes(types)
+      setDocumentTypes(types || [])
     } catch (err) {
       console.error('Error loading document types:', err)
+      setDocumentTypes([])
     }
   }
 
   useEffect(() => {
-    loadDocuments()
-    loadDocumentTypes()
-  }, [patient.id, filterType])
+    if (patient && patient.id) {
+      // Reset state when patient changes
+      setDocuments([])
+      setCategories([])
+      setError(null)
+      setLoading(true)
+      loadDocuments()
+      loadDocumentTypes()
+    }
+  }, [patient?.id, filterType])
 
   // Handle file upload
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,6 +142,11 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
   }
 
   const handleUpload = async () => {
+    if (!patient || !patient.id) {
+      setError('Patient information not available')
+      return
+    }
+    
     if (!selectedFile || !selectedType) {
       setError('Please select a file and document type')
       return
@@ -145,6 +179,11 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Handle document view
   const handleView = async (document: PatientDocument) => {
+    if (!patient || !patient.id) {
+      setError('Patient information not available')
+      return
+    }
+    
     try {
       setSelectedDocument(document)
       setShowViewerModal(true)
@@ -174,6 +213,11 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Handle document download
   const handleDownload = async (document: PatientDocument) => {
+    if (!patient || !patient.id) {
+      setError('Patient information not available')
+      return
+    }
+    
     try {
       const blob = await downloadDocument(patient.id, document.id)
       const url = window.URL.createObjectURL(blob)
@@ -192,6 +236,11 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Handle document deletion
   const handleDelete = async (document: PatientDocument) => {
+    if (!patient || !patient.id) {
+      setError('Patient information not available')
+      return
+    }
+    
     if (!confirm('Are you sure you want to delete this document?')) return
 
     try {
@@ -206,6 +255,10 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Get icon component based on document type
   const getCategoryIcon = (iconName: string) => {
+    if (!iconName) {
+      return FileText
+    }
+    
     const iconMap: Record<string, React.ComponentType<any>> = {
       'activity': FileText,
       'shield': Shield,
@@ -223,6 +276,10 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Check if document is viewable in browser
   const isViewable = (document: PatientDocument) => {
+    if (!document || !document.mime_type) {
+      return false
+    }
+    
     const viewableTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
       'application/pdf',
@@ -233,15 +290,32 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
 
   // Get document URL for viewing
   const getDocumentUrl = (document: PatientDocument) => {
+    if (!document || !document.file_path) {
+      return ''
+    }
     return `http://localhost:8000/storage/${document.file_path}`
   }
 
   // Filter documents based on search term
-  const filteredDocuments = documents.filter(doc => 
+  const filteredDocuments = (documents || []).filter(doc => 
     doc.original_filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.document_type?.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Show loading state while initializing
+  if (loading && (!documents || documents.length === 0)) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <span className="ml-2 text-sm text-gray-600">Loading documents...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -253,7 +327,7 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
             Documents & Files
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {documents.length} document{documents.length !== 1 ? 's' : ''} uploaded
+            {(documents || []).length} document{(documents || []).length !== 1 ? 's' : ''} uploaded
           </p>
         </div>
         <Button 
@@ -300,7 +374,7 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="all">All Types</option>
-          {categories.map(category => (
+          {(categories || []).map(category => (
             <option key={category.code} value={category.code}>
               {category.name} ({category.count})
             </option>
@@ -312,7 +386,7 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
       <div className="bg-white rounded-lg shadow p-4">
         <h3 className="text-md font-medium text-gray-900 mb-3">Document Categories</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {categories.map(category => {
+          {(categories || []).map(category => {
             const IconComponent = getCategoryIcon(category.icon)
             return (
               <div
@@ -365,6 +439,11 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredDocuments.map((document) => {
+              // Safety check for document object
+              if (!document || !document.id) {
+                return null
+              }
+              
               const IconComponent = getCategoryIcon(document.document_type?.icon || 'file')
               return (
                 <div key={document.id} className="p-4 hover:bg-gray-50">
@@ -376,7 +455,7 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <p className="font-medium text-gray-900 truncate">
-                            {document.original_filename}
+                            {document.original_filename || 'Unnamed Document'}
                           </p>
                           {document.status === 'active' && (
                             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -385,12 +464,15 @@ const PatientDocuments: React.FC<PatientDocumentsProps> = ({ patient, onDocument
                         <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
                           <span className="flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(document.created_at).toLocaleDateString()}
+                            {document.created_at ? new Date(document.created_at).toLocaleDateString() : 'Unknown Date'}
                           </span>
-                          <span>{formatFileSize(document.file_size)}</span>
+                          <span>{document.file_size ? formatFileSize(document.file_size) : 'Unknown Size'}</span>
                           <span className="flex items-center">
                             <User className="h-3 w-3 mr-1" />
-                            {document.uploaded_by || 'System'}
+                            {typeof document.uploaded_by === 'object' && document.uploaded_by 
+                              ? `${document.uploaded_by.first_name || ''} ${document.uploaded_by.last_name || ''}`.trim() || document.uploaded_by.email || 'Unknown User'
+                              : document.uploaded_by || 'System'
+                            }
                           </span>
                           {document.document_type && (
                             <span className={`px-2 py-1 rounded-full text-xs bg-${document.document_type.color}-100 text-${document.document_type.color}-800`}>
