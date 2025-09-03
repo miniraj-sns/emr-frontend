@@ -1,13 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import { createPatient } from '../../features/patients/patientSlice'
+import { useNavigate, useParams } from 'react-router-dom'
+import { updatePatient, fetchPatientById } from '../../features/patients/patientSlice'
 import { AppDispatch } from '../../store'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../store'
 
-const NewPatientPage: React.FC = () => {
+const EditPatientPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  
+  const currentPatient = useSelector((state: RootState) => 
+    state.patients.patients.find(p => p.id === parseInt(id || '0'))
+  )
+
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -26,17 +35,46 @@ const NewPatientPage: React.FC = () => {
     notes: ''
   })
 
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchPatientById(parseInt(id)))
+    }
+  }, [dispatch, id])
+
+  useEffect(() => {
+    if (currentPatient) {
+      setFormData({
+        first_name: currentPatient.first_name || '',
+        last_name: currentPatient.last_name || '',
+        email: currentPatient.email || '',
+        phone: currentPatient.phone || '',
+        date_of_birth: currentPatient.date_of_birth ? new Date(currentPatient.date_of_birth).toISOString().split('T')[0] : '',
+        gender: currentPatient.gender || '',
+        address_line1: currentPatient.address_line1 || '',
+        address_line2: currentPatient.address_line2 || '',
+        city: currentPatient.city || '',
+        state: currentPatient.state || '',
+        postal_code: currentPatient.postal_code || '',
+        country: currentPatient.country || '',
+        patient_type: currentPatient.patient_type || 'mindbrite',
+        patient_status: currentPatient.patient_status || 'onboarding',
+        notes: currentPatient.notes || ''
+      })
+    }
+  }, [currentPatient])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    if (!id) return
     
+    setSaving(true)
     try {
-      await dispatch(createPatient(formData)).unwrap()
-      navigate('/patients')
+      await dispatch(updatePatient({ id: parseInt(id), data: formData })).unwrap()
+      navigate(`/patients/${id}`)
     } catch (error) {
-      console.error('Failed to create patient:', error)
+      console.error('Failed to update patient:', error)
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
@@ -45,11 +83,39 @@ const NewPatientPage: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading patient information...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentPatient) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Patient Not Found</h1>
+          <p className="text-gray-600 mb-6">The patient you're looking for doesn't exist.</p>
+          <button
+            onClick={() => navigate('/patients')}
+            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Back to Patients
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Create New Patient</h1>
-        <p className="text-gray-600 mt-2">Add a new patient to your system</p>
+        <h1 className="text-2xl font-bold text-gray-900">Edit Patient</h1>
+        <p className="text-gray-600 mt-2">Update patient information</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
@@ -140,43 +206,7 @@ const NewPatientPage: React.FC = () => {
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
-            </select>
-          </div>
-
-          {/* Patient Type & Status */}
-          <div className="md:col-span-2">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Patient Details</h3>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Patient Type
-            </label>
-            <select
-              name="patient_type"
-              value={formData.patient_type}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="mindbrite">MindBrite</option>
-              <option value="evoke">Evoke</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Patient Status
-            </label>
-            <select
-              name="patient_status"
-              value={formData.patient_status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="onboarding">Onboarding</option>
-              <option value="active">Active</option>
-              <option value="non_active">Non-Active</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
             </select>
           </div>
 
@@ -226,7 +256,7 @@ const NewPatientPage: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              State
+              State/Province
             </label>
             <input
               type="text"
@@ -263,6 +293,43 @@ const NewPatientPage: React.FC = () => {
             />
           </div>
 
+          {/* Patient Settings */}
+          <div className="md:col-span-2">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Patient Settings</h3>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Patient Type
+            </label>
+            <select
+              name="patient_type"
+              value={formData.patient_type}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="mindbrite">MindBrite</option>
+              <option value="evoke">Evoke</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Patient Status
+            </label>
+            <select
+              name="patient_status"
+              value={formData.patient_status}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="active">Active</option>
+              <option value="non_active">Non-Active</option>
+              <option value="onboarding">Onboarding</option>
+            </select>
+          </div>
+
           {/* Notes */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -274,27 +341,26 @@ const NewPatientPage: React.FC = () => {
               onChange={handleChange}
               rows={4}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Add any additional notes about the patient..."
+              placeholder="Additional notes about the patient..."
             />
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
           <button
             type="button"
-            onClick={() => navigate('/patients')}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-            disabled={loading}
+            onClick={() => navigate(`/patients/${id}`)}
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={loading || !formData.first_name || !formData.last_name}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            disabled={saving}
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Creating...' : 'Create Patient'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </form>
@@ -302,10 +368,4 @@ const NewPatientPage: React.FC = () => {
   )
 }
 
-export default NewPatientPage
-
-
-
-
-
-
+export default EditPatientPage

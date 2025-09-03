@@ -36,6 +36,7 @@ const App: React.FC = () => {
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/logout" element={<Navigate to="/login" replace />} />
               
               {/* Protected Routes */}
               <Route

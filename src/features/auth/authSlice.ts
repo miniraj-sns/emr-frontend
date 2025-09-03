@@ -68,6 +68,9 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.error = null;
+      // Clear localStorage when logging out
+      localStorage.removeItem('user_token');
+      localStorage.removeItem('user_data');
     },
     clearError: (state) => {
       state.error = null;

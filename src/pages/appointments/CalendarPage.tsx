@@ -32,7 +32,7 @@ const CalendarPage: React.FC = () => {
       const aptEndTime = new Date(aptDate.getTime() + (apt.duration_minutes || 30) * 60000)
       
       // Check if the time slots overlap
-      const slotEndTime = new Date(slotDateTime.getTime() + 30 * 60000) // Assuming 30-minute slots
+      const slotEndTime = new Date(slotDateTime.getTime() + 15 * 60000) // 15-minute slots
       
       const timeOverlap = slotDateTime < aptEndTime && slotEndTime > aptDate
       
@@ -123,9 +123,22 @@ const CalendarPage: React.FC = () => {
     return appointments.filter((apt: any) => {
       const eventDate = new Date(apt.scheduled_at)
       const dateMatch = eventDate.toDateString() === date.toDateString()
-      const hourMatch = eventDate.getHours() === hour
-      const minuteMatch = minute !== undefined ? eventDate.getMinutes() === minute : true
-      return dateMatch && hourMatch && minuteMatch
+      
+      // Calculate the end time of the appointment
+      const appointmentEndTime = new Date(eventDate.getTime() + (apt.duration_minutes || 30) * 60000)
+      
+      // Calculate the start and end of the current time slot
+      const slotStartTime = new Date(date)
+      slotStartTime.setHours(hour, minute || 0, 0, 0)
+      const slotEndTime = new Date(slotStartTime.getTime() + 15 * 60000) // 15-minute slot
+      
+      // Check if the appointment overlaps with this time slot
+      // An appointment overlaps with a slot if:
+      // 1. The appointment starts before the slot ends AND
+      // 2. The appointment ends after the slot starts
+      const appointmentOverlapsSlot = eventDate < slotEndTime && appointmentEndTime > slotStartTime
+      
+      return dateMatch && appointmentOverlapsSlot
     })
   }
 
@@ -199,7 +212,7 @@ const CalendarPage: React.FC = () => {
                 const hasEvents = events.length > 0
                 
                 // Check if slot is available for new appointments
-                const isAvailable = !hasEvents && (() => {
+                const isAvailable = isTimeSlotAvailable(day, slot) && (() => {
                   const today = new Date()
                   today.setHours(0, 0, 0, 0)
                   const selectedDay = new Date(day)
@@ -224,6 +237,10 @@ const CalendarPage: React.FC = () => {
                         ? 'cursor-not-allowed opacity-50 text-gray-400'
                         : 'cursor-pointer hover:bg-blue-50'
                     }`}
+                    style={{
+                      height: 'auto',
+                      minHeight: '30px'
+                    }}
                     onClick={() => {
                       const selectedDateTime = new Date(day)
                       selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
@@ -235,28 +252,54 @@ const CalendarPage: React.FC = () => {
                       }
                     }}
                   >
-                    {events.map((event: any) => (
-                      <div
-                        key={event.id}
-                        className={`text-xs p-1 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity ${
-                          event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                          event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
-                          event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
-                          'bg-gray-100 text-gray-800 border border-gray-300'
-                        }`}
-                        title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedEvent(event)
-                          setShowSchedulingModal(true)
-                        }}
-                      >
+                    {events.map((event: any) => {
+                      // Safety check - ensure event is valid
+                      if (!event || typeof event !== 'object') {
+                        console.warn('Invalid event object:', event)
+                        return null
+                      }
+                      
+                      // Only show the appointment in the first slot it starts in
+                      const eventDate = new Date(event.scheduled_at)
+                      const isFirstSlot = eventDate.getHours() === slot.hour && eventDate.getMinutes() === slot.minute
+                      
+                      if (!isFirstSlot) {
+                        return null // Don't render in subsequent slots
+                      }
+                      
+                      // Calculate how many time slots this appointment should span
+                      const durationMinutes = event.duration_minutes || 30
+                      const rowSpan = Math.ceil(durationMinutes / 15) // 15-minute slots
+                      
+                      return (
+                        <div
+                          key={event.id}
+                          className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${
+                            event.status === 'scheduled' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                            event.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-300' :
+                            event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
+                            'bg-gray-100 text-gray-800 border border-gray-300'
+                          }`}
+                          style={{
+                            minHeight: `${rowSpan * 30}px` // 30px per slot
+                          }}
+                          title={`${event.patient?.first_name || 'Unknown'} ${event.patient?.last_name || 'Patient'} - ${event.type || 'Unknown'} (${event.status || 'Unknown'}) - ${event.patient?.phone || 'No phone'} - Duration: ${durationMinutes} minutes - Click to edit`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedEvent(event)
+                            setShowSchedulingModal(true)
+                          }}
+                        >
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
+                            <span className="font-medium">{event.patient?.first_name || 'Unknown'} {event.patient?.last_name || 'Patient'}</span>
                             <span className="text-xs opacity-75">✏️</span>
                           </div>
-                          <div className="text-xs text-gray-600 capitalize">{event.type}</div>
+                          <div className="text-xs text-gray-600 capitalize">{event.type || 'Unknown'}</div>
+                          <div className="text-xs text-gray-500">
+                            {eventDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                            {new Date(eventDate.getTime() + durationMinutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className={`px-1 rounded text-xs ${
                               event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
@@ -264,7 +307,7 @@ const CalendarPage: React.FC = () => {
                               event.status === 'no_show' ? 'bg-red-200 text-red-700' :
                               'bg-gray-200 text-gray-700'
                             }`}>
-                              {event.status}
+                              {event.status || 'Unknown'}
                             </span>
                             {event.patient?.phone && (
                               <span className="text-gray-600">{event.patient.phone}</span>
@@ -272,7 +315,7 @@ const CalendarPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )})}
                     
                     {/* Book Another Button - Always show when there are events */}
                     {hasEvents && (
@@ -314,12 +357,7 @@ const CalendarPage: React.FC = () => {
     return (
       <div className="overflow-y-auto max-h-[600px]">
         {timeSlots.map((slot, index) => {
-          const slotEvents = events.filter((event: any) => {
-            const eventDate = new Date(event.scheduled_at)
-            const eventHour = eventDate.getHours()
-            const eventMinute = eventDate.getMinutes()
-            return eventHour === slot.hour && eventMinute === slot.minute
-          })
+          const slotEvents = getEventsForTimeSlot(currentDate, slot.hour, slot.minute)
           
           return (
             <div key={index} className="flex border-b border-gray-200">
@@ -327,10 +365,10 @@ const CalendarPage: React.FC = () => {
                 {slot.displayTime}
               </div>
                              <div 
-                 className={`flex-1 p-2 min-h-[40px] transition-colors ${
+                 className={`flex-1 p-2 transition-colors ${
                                        slotEvents.length > 0 
                       ? 'cursor-not-allowed opacity-75' 
-                      : (() => {
+                      : !isTimeSlotAvailable(currentDate, slot) || (() => {
                           const today = new Date()
                           today.setHours(0, 0, 0, 0)
                           const selectedDay = new Date(currentDate)
@@ -349,42 +387,68 @@ const CalendarPage: React.FC = () => {
                       ? 'cursor-not-allowed opacity-50 text-gray-400'
                       : 'cursor-pointer hover:bg-blue-50'
                  }`}
+                 style={{
+                   height: 'auto',
+                   minHeight: '40px'
+                 }}
                  onClick={() => {
                    const selectedDateTime = new Date(currentDate)
                    selectedDateTime.setHours(slot.hour, slot.minute, 0, 0)
                    const now = new Date()
                    
-                   if (slotEvents.length === 0 && selectedDateTime >= now) {
+                   if (slotEvents.length === 0 && isTimeSlotAvailable(currentDate, slot) && selectedDateTime >= now) {
                      setSelectedDate(selectedDateTime)
                      setShowSchedulingModal(true)
                    }
                  }}
                >
-                {slotEvents.map((event: any) => (
-                  <div
-                    key={event.id}
-                     className={`p-2 rounded-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity ${
-                      event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
-                      event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
-                      event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
-                      'bg-gray-50 border-l-4 border-gray-500'
-                    }`}
-                     title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
-                     onClick={(e) => {
-                       e.stopPropagation()
-                       setSelectedEvent(event)
-                       setShowSchedulingModal(true)
-                     }}
-                  >
+                {slotEvents.map((event: any) => {
+                  // Safety check - ensure event is valid
+                  if (!event || typeof event !== 'object') {
+                    console.warn('Invalid event object:', event)
+                    return null
+                  }
+                  
+                  // Only show the appointment in the first slot it starts in
+                  const eventDate = new Date(event.scheduled_at)
+                  const isFirstSlot = eventDate.getHours() === slot.hour && eventDate.getMinutes() === slot.minute
+                  
+                  if (!isFirstSlot) {
+                    return null // Don't render in subsequent slots
+                  }
+                  
+                  // Calculate how many time slots this appointment should span
+                  const durationMinutes = event.duration_minutes || 30
+                  const rowSpan = Math.ceil(durationMinutes / 15) // 15-minute slots
+                  
+                  return (
+                    <div
+                      key={event.id}
+                       className={`p-2 rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                        event.status === 'scheduled' ? 'bg-blue-50 border-l-4 border-blue-500' :
+                        event.status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
+                        event.status === 'no_show' ? 'bg-red-50 border-l-4 border-red-500' :
+                        'bg-gray-50 border-l-4 border-gray-500'
+                      }`}
+                       style={{
+                         minHeight: `${rowSpan * 40}px` // 40px per slot for day view
+                       }}
+                       title={`${event.patient?.first_name || 'Unknown'} ${event.patient?.last_name || 'Patient'} - ${event.type || 'Unknown'} (${event.status || 'Unknown'}) - ${event.patient?.phone || 'No phone'} - Duration: ${durationMinutes} minutes - Click to edit`}
+                       onClick={(e) => {
+                         e.stopPropagation()
+                         setSelectedEvent(event)
+                         setShowSchedulingModal(true)
+                       }}
+                    >
                     <div className="flex items-center justify-between">
                        <div className="flex-1">
                          <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-gray-900 text-sm">
-                          {event.patient?.first_name} {event.patient?.last_name}
+                          {event.patient?.first_name || 'Unknown'} {event.patient?.last_name || 'Patient'}
                         </h4>
                            <span className="text-xs opacity-75">✏️</span>
                          </div>
-                        <p className="text-xs text-gray-600 capitalize">{event.type}</p>
+                        <p className="text-xs text-gray-600 capitalize">{event.type || 'Unknown'}</p>
                         <p className="text-xs text-gray-500">
                           {new Date(event.scheduled_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
                           {new Date(new Date(event.scheduled_at).getTime() + event.duration_minutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -396,7 +460,7 @@ const CalendarPage: React.FC = () => {
                              event.status === 'no_show' ? 'bg-red-200 text-red-700' :
                              'bg-gray-200 text-gray-700'
                            }`}>
-                             {event.status}
+                             {event.status || 'Unknown'}
                            </span>
                            {event.patient?.phone && (
                              <span className="text-xs text-gray-600">{event.patient.phone}</span>
@@ -405,13 +469,18 @@ const CalendarPage: React.FC = () => {
                         {event.location && (
                           <p className="text-xs text-gray-500 flex items-center mt-1">
                             <MapPin className="h-3 w-3 mr-1" />
-                            {event.location}
+                            {typeof event.location === 'string' 
+                              ? event.location 
+                              : (event.location && typeof event.location === 'object' && event.location.name) 
+                                ? event.location.name 
+                                : 'Unknown Location'
+                            }
                           </p>
                         )}
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
                 {slotEvents.length === 0 && (
                   <div className="text-xs text-gray-400 text-center py-2">
                     Click to schedule appointment
@@ -556,7 +625,7 @@ const CalendarPage: React.FC = () => {
                            event.status === 'no_show' ? 'bg-red-100 text-red-800 border border-red-300' :
                            'bg-gray-100 text-gray-800 border border-gray-300'
                          }`}
-                         title={`${event.patient?.first_name} ${event.patient?.last_name} - ${event.type} (${event.status}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
+                         title={`${event.patient?.first_name || 'Unknown'} ${event.patient?.last_name || 'Patient'} - ${event.type || 'Unknown'} (${event.status || 'Unknown'}) - ${event.patient?.phone || 'No phone'} - Click to edit`}
                         onClick={(e) => {
                           e.stopPropagation()
                           setSelectedEvent(event)
@@ -564,10 +633,10 @@ const CalendarPage: React.FC = () => {
                          }}
                        >
                          <div className="flex items-center justify-between">
-                           <span className="font-medium">{event.patient?.first_name} {event.patient?.last_name}</span>
+                           <span className="font-medium">{event.patient?.first_name || 'Unknown'} {event.patient?.last_name || 'Patient'}</span>
                            <span className="text-xs opacity-75">✏️</span>
                          </div>
-                         <div className="text-xs text-gray-600 capitalize">{event.type}</div>
+                         <div className="text-xs text-gray-600 capitalize">{event.type || 'Unknown'}</div>
                          <div className="flex items-center justify-between text-xs mt-0.5">
                            <span className={`px-1 rounded text-xs ${
                              event.status === 'scheduled' ? 'bg-blue-200 text-blue-700' :
@@ -575,7 +644,7 @@ const CalendarPage: React.FC = () => {
                              event.status === 'no_show' ? 'bg-red-200 text-red-700' :
                              'bg-gray-200 text-gray-700'
                            }`}>
-                             {event.status}
+                             {event.status || 'Unknown'}
                            </span>
                            {event.patient?.phone && (
                              <span className="text-gray-600">{event.patient.phone}</span>

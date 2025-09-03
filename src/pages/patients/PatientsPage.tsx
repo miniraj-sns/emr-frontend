@@ -24,6 +24,7 @@ import {
 } from '../../features/patients/patientSlice'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import PatientModal from '../../components/patients/PatientModal'
 
 const PatientsPage: React.FC = () => {
   const dispatch = useDispatch()
@@ -37,6 +38,8 @@ const PatientsPage: React.FC = () => {
   
   const [searchTerm, setSearchTerm] = useState(filters.search || '')
   const [showFilters, setShowFilters] = useState(false)
+  const [showPatientModal, setShowPatientModal] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState<any>(null)
 
   // Fetch patients on component mount and when filters change
   useEffect(() => {
@@ -70,6 +73,25 @@ const PatientsPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this patient?')) {
       await dispatch(deletePatient(id))
     }
+  }
+
+  const handleAddPatient = () => {
+    setSelectedPatient(null)
+    setShowPatientModal(true)
+  }
+
+  const handleEditPatient = (patient: any) => {
+    setSelectedPatient(patient)
+    setShowPatientModal(true)
+  }
+
+  const handleModalClose = () => {
+    setShowPatientModal(false)
+    setSelectedPatient(null)
+  }
+
+  const handleModalSuccess = () => {
+    dispatch(fetchPatients(filters))
   }
 
   const getStatusBadge = (status: string) => {
@@ -110,12 +132,10 @@ const PatientsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
           <p className="text-gray-600">Manage your patient records and information</p>
         </div>
-        <Link to="/patients/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Patient
-          </Button>
-        </Link>
+        <Button onClick={handleAddPatient}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Patient
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -308,12 +328,12 @@ const PatientsPage: React.FC = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
-                          <Link
-                            to={`/patients/${patient.id}/edit`}
+                          <button
+                            onClick={() => handleEditPatient(patient)}
                             className="text-blue-600 hover:text-blue-900"
                           >
                             <Edit className="h-4 w-4" />
-                          </Link>
+                          </button>
                           <button
                             onClick={() => handleDeletePatient(patient.id)}
                             className="text-red-600 hover:text-red-900"
@@ -407,6 +427,14 @@ const PatientsPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Patient Modal */}
+      <PatientModal
+        isOpen={showPatientModal}
+        onClose={handleModalClose}
+        patient={selectedPatient}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   )
 }
