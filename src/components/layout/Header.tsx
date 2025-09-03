@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../../store'
-import { toggleSidebar } from '../../features/ui/uiSlice'
+import { toggleSidebar, setSidebarOpen } from '../../features/ui/uiSlice'
 import { useAuth } from '../../hooks/useAuth'
 import { 
   Menu, 
@@ -31,9 +31,7 @@ const Header: React.FC = () => {
   const notificationsRef = useRef<HTMLDivElement>(null)
   const searchPopupRef = useRef<HTMLDivElement>(null)
 
-  // Debug logging
-  console.log('Header sidebar state:', sidebar)
-  console.log('Header sidebar isOpen:', sidebar?.isOpen)
+
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -64,14 +62,7 @@ const Header: React.FC = () => {
   }
 
   const handleToggleSidebar = () => {
-    console.log('Toggle sidebar clicked, current state:', sidebar?.isOpen)
-    console.log('Dispatching toggleSidebar action')
-    try {
-      dispatch(toggleSidebar())
-      console.log('toggleSidebar action dispatched successfully')
-    } catch (error) {
-      console.error('Error dispatching toggleSidebar:', error)
-    }
+    dispatch(toggleSidebar())
   }
 
   const toggleUserMenu = () => setShowUserMenu(!showUserMenu)
@@ -117,6 +108,8 @@ const Header: React.FC = () => {
             >
               {sidebar.isOpen ? <X className="h-6 w-6" /> : <PanelLeft className="h-6 w-6" />}
             </button>
+            
+
 
             {/* Layout Switcher */}
             <LayoutSwitcher />

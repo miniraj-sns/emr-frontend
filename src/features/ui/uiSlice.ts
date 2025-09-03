@@ -24,10 +24,10 @@ interface UIState {
 
 const initialState: UIState = {
   sidebar: {
-    isOpen: false, // Start with sidebar closed for topbar layout
+    isOpen: true, // Start with sidebar open for sidebar layout
   },
   layout: {
-    type: 'topbar' // Default to topbar layout
+    type: 'sidebar' // Default to sidebar layout
   },
   modals: {},
   notifications: [],
