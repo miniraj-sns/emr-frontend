@@ -63,6 +63,11 @@ const uiSlice = createSlice({
     },
     setLayoutType: (state, action: PayloadAction<'sidebar' | 'topbar'>) => {
       state.layout.type = action.payload
+      
+      // Auto-open sidebar when switching to sidebar layout
+      if (action.payload === 'sidebar') {
+        state.sidebar.isOpen = true
+      }
     }
   },
 })
