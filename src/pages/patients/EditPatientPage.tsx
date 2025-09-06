@@ -369,3 +369,6 @@ const EditPatientPage: React.FC = () => {
 }
 
 export default EditPatientPage
+
+
+

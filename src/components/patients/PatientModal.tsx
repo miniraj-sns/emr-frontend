@@ -394,3 +394,6 @@ const PatientModal: React.FC<PatientModalProps> = ({ isOpen, onClose, patient, o
 }
 
 export default PatientModal
+
+
+

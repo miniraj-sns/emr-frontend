@@ -13,7 +13,8 @@ import {
   Shield,
   Pill,
   Stethoscope,
-  Activity
+  Activity,
+  DollarSign
 } from 'lucide-react'
 import { RootState } from '../../store'
 import { fetchPatient, deletePatient } from '../../features/patients/patientSlice'
@@ -28,7 +29,8 @@ import {
   PatientInsurance,
   PatientDocuments,
   PatientPrescriptions,
-  PatientVitalSigns
+  PatientVitalSigns,
+  PatientBilling
 } from '../../components/patients'
 import PatientMedicalInfo from '../../components/patients/PatientMedicalInfo'
 
@@ -120,6 +122,7 @@ const PatientDetailPage: React.FC = () => {
     { id: 'prescriptions', label: 'Prescriptions', icon: Pill },
     { id: 'notes', label: 'Notes', icon: MessageSquare },
     { id: 'insurance', label: 'Insurance', icon: Shield },
+    { id: 'billing', label: 'Billing', icon: DollarSign },
     { id: 'documents', label: 'Documents', icon: FileImage }
   ]
 
@@ -238,6 +241,13 @@ const PatientDetailPage: React.FC = () => {
             <PatientInsurance 
               patient={currentPatient} 
               onInsuranceUpdated={() => dispatch(fetchPatient(currentPatient.id))}
+            />
+          )}
+
+          {activeTab === 'billing' && (
+            <PatientBilling 
+              patient={currentPatient} 
+              onBillingUpdated={() => dispatch(fetchPatient(currentPatient.id))}
             />
           )}
 
