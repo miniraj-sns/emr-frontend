@@ -11,12 +11,16 @@ import {
   Calendar,
   CreditCard,
   Receipt,
-  AlertCircle
+  AlertCircle,
+  Package,
+  Wrench
 } from 'lucide-react'
 import { billingService, PatientBilling as BillingType, Invoice, InvoiceLineItem } from '../../services/billingService'
+import { servicesService, Service, Product } from '../../services/servicesService'
 import Button from '../ui/Button'
 import { Patient } from '../../types/patient'
 import InvoiceViewer from './InvoiceViewer'
+import ServicesAndProductsManager from '../services/ServicesAndProductsManager'
 
 interface PatientBillingProps {
   patient: Patient
@@ -38,11 +42,28 @@ const PatientBilling: React.FC<PatientBillingProps> = ({ patient, onBillingUpdat
   const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false)
   const [invoiceNotes, setInvoiceNotes] = useState('')
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([])
+  const [showServicesProductsModal, setShowServicesProductsModal] = useState(false)
+  const [availableServices, setAvailableServices] = useState<Service[]>([])
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchBillingData()
+    fetchServicesAndProducts()
   }, [patient.id])
+
+  const fetchServicesAndProducts = async () => {
+    try {
+      const [servicesResponse, productsResponse] = await Promise.all([
+        servicesService.getServices({ per_page: 100 }),
+        servicesService.getProducts({ per_page: 100 })
+      ])
+      setAvailableServices(servicesResponse.services)
+      setAvailableProducts(productsResponse.products)
+    } catch (err) {
+      console.error('Error fetching services and products:', err)
+    }
+  }
 
   const fetchBillingData = async () => {
     try {
@@ -184,7 +205,9 @@ const PatientBilling: React.FC<PatientBillingProps> = ({ patient, onBillingUpdat
       
       // Recalculate total_amount
       if (field === 'quantity' || field === 'unit_price') {
-        updated[index].total_amount = updated[index].quantity * updated[index].unit_price
+        const quantity = parseFloat(updated[index].quantity?.toString() || '0') || 0
+        const unitPrice = parseFloat(updated[index].unit_price?.toString() || '0') || 0
+        updated[index].total_amount = quantity * unitPrice
       }
       
       return updated
@@ -196,7 +219,36 @@ const PatientBilling: React.FC<PatientBillingProps> = ({ patient, onBillingUpdat
   }
 
   const getTotalAmount = () => {
-    return lineItems.reduce((sum, item) => sum + item.total_amount, 0)
+    return lineItems.reduce((sum, item) => {
+      const amount = parseFloat(item.total_amount?.toString() || '0') || 0
+      return sum + amount
+    }, 0)
+  }
+
+  const handleServiceSelect = (service: Service) => {
+    const newLineItem: InvoiceLineItem = {
+      description: service.name,
+      quantity: 1,
+      unit_price: service.price,
+      total_amount: service.price,
+      service_type: 'service',
+      notes: service.description
+    }
+    setLineItems([...lineItems, newLineItem])
+    setShowServicesProductsModal(false)
+  }
+
+  const handleProductSelect = (product: Product) => {
+    const newLineItem: InvoiceLineItem = {
+      description: product.name,
+      quantity: 1,
+      unit_price: product.price,
+      total_amount: product.price,
+      service_type: 'product',
+      notes: product.description
+    }
+    setLineItems([...lineItems, newLineItem])
+    setShowServicesProductsModal(false)
   }
 
   const handleInputChange = (field: keyof BillingType, value: string | number) => {
@@ -519,14 +571,25 @@ const PatientBilling: React.FC<PatientBillingProps> = ({ patient, onBillingUpdat
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium text-gray-900">Invoice Line Items</h4>
-                    <Button
-                      size="sm"
-                      onClick={addLineItem}
-                      className="flex items-center space-x-1"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Item</span>
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowServicesProductsModal(true)}
+                        className="flex items-center space-x-1"
+                      >
+                        <Package className="h-4 w-4" />
+                        <span>Select Services/Products</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={addLineItem}
+                        className="flex items-center space-x-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Item</span>
+                      </Button>
+                    </div>
                   </div>
                   
                   {lineItems.length === 0 ? (
@@ -700,6 +763,33 @@ const PatientBilling: React.FC<PatientBillingProps> = ({ patient, onBillingUpdat
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Services and Products Selection Modal */}
+      {showServicesProductsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Select Services & Products</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowServicesProductsModal(false)}
+                  className="flex items-center space-x-1"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <ServicesAndProductsManager
+                onServiceSelect={handleServiceSelect}
+                onProductSelect={handleProductSelect}
+                selectionMode={true}
+              />
             </div>
           </div>
         </div>
